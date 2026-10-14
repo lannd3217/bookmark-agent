@@ -1,0 +1,149 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bookmarks</title>
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; max-width: 680px; margin: 24px auto; padding: 0 16px; }
+  form { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  input { flex: 1 1 200px; padding: 8px; font: inherit; }
+  button { padding: 8px 14px; font: inherit; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: default; }
+  .card { border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; margin: 8px 0;
+          display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .card a { word-break: break-all; }
+  .note { color: #666; font-size: 13px; }
+  #status { min-height: 1.5em; color: #b00020; }
+</style>
+</head>
+<body>
+<h1>Bookmarks</h1>
+<form id="save-form">
+  <input name="url" type="url" placeholder="Paste a link (http:// or https://)" required>
+  <input name="note" placeholder="Note (optional)">
+  <button id="save-btn">Save</button>
+</form>
+<div id="status" role="status"></div>
+<div id="list"></div>
+
+<script>
+// All server data is written with textContent / setAttribute, never innerHTML,
+// so a saved URL or note can't be interpreted as markup.
+const listEl = document.getElementById("list");
+const statusEl = document.getElementById("status");
+const form = document.getElementById("save-form");
+const saveBtn = document.getElementById("save-btn");
+
+const showError = msg => { statusEl.textContent = msg; };
+const clearError = () => { statusEl.textContent = ""; };
+
+// Only allow http(s) links in href, even if something else ended up in the DB
+const safeHref = u => {
+  try { const p = new URL(u); return /^https?:$/.test(p.protocol) ? p.href : null; }
+  catch { return null; }
+};
+
+// Single fetch wrapper: throws a readable Error on network failure or non-2xx
+async function api(path, opts = {}) {
+  let r;
+  try {
+    r = await fetch(path, opts);
+  } catch {
+    throw new Error("Network error — is the server running?");
+  }
+  let data = null;
+  const text = await r.text();
+  if (text) {
+    try { data = JSON.parse(text); } catch { data = text; }
+  }
+  if (!r.ok) {
+    const d = data && data.detail;
+    const msg = typeof d === "string" ? d
+      : Array.isArray(d) ? d.map(x => x.msg).join("; ")
+      : `Request failed (${r.status})`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+function el(tag, props = {}, ...children) {
+  const n = document.createElement(tag);
+  Object.assign(n, props);
+  n.append(...children);
+  return n;
+}
+
+function render(rows) {
+  if (!rows.length) {
+    listEl.replaceChildren(el("p", { textContent: "No bookmarks yet." }));
+    return;
+  }
+  listEl.replaceChildren(...rows.map(b => {
+    const href = safeHref(b.url);
+    const link = href
+      ? el("a", { href, target: "_blank", rel: "noopener noreferrer", textContent: b.url })
+      : el("span", { textContent: String(b.url ?? "") });
+    const info = el("div", {}, link);
+    if (b.note) info.append(el("div", { className: "note", textContent: b.note }));
+    info.append(el("div", { className: "note", textContent: String(b.created_at ?? "") }));
+    const del = el("button", { textContent: "Delete", type: "button" });
+    del.dataset.id = String(b.id);
+    return el("div", { className: "card" }, info, del);
+  }));
+}
+
+async function load() {
+  try {
+    const rows = await api("/api/bookmarks");
+    if (!Array.isArray(rows)) throw new Error("Unexpected response from server");
+    render(rows);
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  clearError();
+  const url = form.url.value.trim();
+  const note = form.note.value.trim();
+  const body = { url };
+  if (note) body.note = note;
+
+  saveBtn.disabled = true;
+  try {
+    await api("/api/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    form.reset();
+    await load();
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    saveBtn.disabled = false;
+  }
+});
+
+listEl.addEventListener("click", async e => {
+  const btn = e.target.closest("button[data-id]");
+  if (!btn) return;
+  const id = Number(btn.dataset.id);
+  if (!Number.isInteger(id)) return;
+  clearError();
+  btn.disabled = true;
+  try {
+    await api(`/api/bookmarks/${id}`, { method: "DELETE" });
+    await load();
+  } catch (err) {
+    showError(err.message);
+    btn.disabled = false;
+  }
+});
+
+load();
+</script>
+</body>
+</html>
