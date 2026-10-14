@@ -1,0 +1,20 @@
+{
+  "saves_v2": [
+    {
+      "timestamp": 1700000000,
+      "data": [{"uri": "https://Example.com/article?id=7", "title": "A normal article"}]
+    },
+    {
+      "timestamp": 1700000100,
+      "data": [{"title": "A save with no uri"}]
+    },
+    {
+      "timestamp": 1700000200,
+      "data": [{"uri": "https://example.com/article?id=7", "title": "Exact duplicate"}]
+    },
+    {
+      "timestamp": 1700000300,
+      "data": [{"uri": "https://example.com/article?utm_source=facebook&id=7&fbclid=IwAR0abc", "title": "Tracking duplicate"}]
+    }
+  ]
+}
