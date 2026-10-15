@@ -15,16 +15,45 @@
   .card a { word-break: break-all; }
   .note { color: #666; font-size: 13px; }
   #status { min-height: 1.5em; color: #b00020; }
+  #ask { border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; margin-bottom: 16px; }
+  #ask form { margin-bottom: 0; }
+  #ask-answer { white-space: pre-wrap; margin: 10px 0 0; }
+  #ask-error { color: #b00020; margin: 8px 0 0; }
+  #ask-items { margin: 8px 0 0; padding-left: 20px; }
+  #ask-items a { word-break: break-all; }
+  [hidden] { display: none !important; }
+  #digest { border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; margin-bottom: 16px; }
+  #digest h2 { font-size: 18px; margin: 0 0 4px; }
+  #digest h3 { font-size: 14px; margin: 12px 0 4px; color: #444; }
+  #digest ol { margin: 4px 0 0; padding-left: 0; list-style: none; }
+  #digest li { margin: 8px 0; }
+  #digest a { word-break: break-word; }
+  .rank { font-weight: 600; margin-right: 4px; }
+  .ranked-by { font-weight: normal; font-size: 12px; color: #666; border: 1px solid #ddd;
+               border-radius: 4px; padding: 0 5px; margin-left: 6px; }
 </style>
 </head>
 <body>
 <h1>Bookmarks</h1>
+<section id="digest">
+  <h2>This week</h2>
+  <div id="digest-body"></div>
+</section>
 <form id="save-form">
   <input name="url" type="url" placeholder="Paste a link (http:// or https://)" required>
   <input name="note" placeholder="Note (optional)">
   <button id="save-btn">Save</button>
 </form>
 <div id="status" role="status"></div>
+<section id="ask">
+  <form id="ask-form">
+    <input name="question" placeholder="Ask about your library…" maxlength="500" required>
+    <button id="ask-btn">Ask</button>
+  </form>
+  <p id="ask-error" role="alert" hidden></p>
+  <p id="ask-answer" aria-live="polite" hidden></p>
+  <ul id="ask-items" hidden></ul>
+</section>
 <div id="list"></div>
 
 <script>
@@ -143,6 +172,86 @@ listEl.addEventListener("click", async e => {
   }
 });
 
+const askForm = document.getElementById("ask-form");
+const askBtn = document.getElementById("ask-btn");
+const askAnswer = document.getElementById("ask-answer");
+const askItems = document.getElementById("ask-items");
+const askError = document.getElementById("ask-error");
+
+askForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  const question = askForm.question.value.trim();
+  if (!question) return;
+  askError.hidden = askAnswer.hidden = askItems.hidden = true;
+  askBtn.disabled = true;
+  askBtn.textContent = "Thinking…";
+  try {
+    const data = await api("/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
+    askAnswer.textContent = String(data?.answer ?? "");
+    askAnswer.hidden = false;
+    const items = Array.isArray(data?.items) ? data.items : [];
+    askItems.replaceChildren(...items.map(it => {
+      const label = `[${it.id}] ${it.title || it.url}`;
+      const href = safeHref(it.url);
+      return el("li", {}, href
+        ? el("a", { href, target: "_blank", rel: "noopener noreferrer", textContent: label })
+        : el("span", { textContent: label }));
+    }));
+    askItems.hidden = items.length === 0;
+  } catch (err) {
+    askError.textContent = err.message;
+    askError.hidden = false;
+  } finally {
+    askBtn.disabled = false;
+    askBtn.textContent = "Ask";
+  }
+});
+
+const digestBody = document.getElementById("digest-body");
+
+const RANKED_BY = {
+  ai: "Ranked by Claude",
+  prescore: "Ranked by pre-score",
+  prescore_fallback: "Ranked by pre-score (AI ranking failed)",
+};
+
+async function loadDigest() {
+  let digests;
+  try {
+    digests = (await api("/api/digests/latest"))?.digests;
+  } catch (err) {
+    // The digest is optional; keep the rest of the page working.
+    digestBody.replaceChildren(el("p", { className: "note", textContent: `Couldn't load the digest: ${err.message}` }));
+    return;
+  }
+  if (!Array.isArray(digests) || !digests.length) {
+    digestBody.replaceChildren(el("p", { className: "note",
+      textContent: "No digest yet. Run python -m app.jobs.weekly_digest." }));
+    return;
+  }
+  digestBody.replaceChildren(...digests.map(d => {
+    const heading = el("h3", { textContent: `${d.watchlist} · ${String(d.run_at ?? "").slice(0, 10)}` });
+    const label = RANKED_BY[d.ranked_by];
+    if (label) heading.append(el("span", { className: "ranked-by", textContent: label }));
+    const list = el("ol", {}, ...(d.items || []).map(it => {
+      const href = safeHref(it.url);
+      const title = String(it.title || it.url || "");
+      const link = href
+        ? el("a", { href, target: "_blank", rel: "noopener noreferrer", textContent: title })
+        : el("span", { textContent: title });
+      const li = el("li", {}, el("span", { className: "rank", textContent: `${it.rank}.` }), link);
+      if (it.why) li.append(el("div", { className: "note", textContent: it.why }));
+      return li;
+    }));
+    return el("div", {}, heading, list);
+  }));
+}
+
+loadDigest();
 load();
 </script>
 </body>

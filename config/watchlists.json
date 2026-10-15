@@ -1,0 +1,57 @@
+[
+  {
+    "name": "interpretability",
+    "domain": "Mechanistic interpretability and model internals for AI safety: understanding what models represent and compute, probes, sparse autoencoders, circuits, steering, and using internals to detect unsafe behavior.",
+    "arxiv_categories": ["cs.LG", "cs.AI", "cs.CL"],
+    "keywords": [
+      "mechanistic interpretability",
+      "sparse autoencoder",
+      "linear probe",
+      "circuit analysis",
+      "steering vector",
+      "representation engineering",
+      "activation patching",
+      "feature attribution",
+      "superposition"
+    ],
+    "top_n": 5
+  },
+  {
+    "name": "alignment",
+    "domain": "Alignment and oversight of advanced AI: reward hacking, deceptive or scheming behavior, scalable oversight, chain-of-thought monitoring and faithfulness, situational awareness, and model organisms of misalignment.",
+    "arxiv_categories": ["cs.LG", "cs.AI", "cs.CL"],
+    "keywords": [
+      "AI alignment",
+      "reward hacking",
+      "specification gaming",
+      "deceptive alignment",
+      "scheming",
+      "sandbagging",
+      "scalable oversight",
+      "weak-to-strong",
+      "chain-of-thought monitoring",
+      "chain-of-thought faithfulness",
+      "situational awareness",
+      "evaluation awareness",
+      "goal misgeneralization",
+      "model organisms"
+    ],
+    "top_n": 5
+  },
+  {
+    "name": "robustness-evals",
+    "domain": "Safety evaluations and robustness: dangerous capability evaluations, jailbreaks and defenses, red teaming, adversarial robustness of language models, refusal behavior, and unlearning of hazardous knowledge.",
+    "arxiv_categories": ["cs.LG", "cs.AI", "cs.CL", "cs.CR"],
+    "keywords": [
+      "dangerous capability evaluation",
+      "safety evaluation",
+      "jailbreak defense",
+      "red teaming",
+      "adversarial robustness",
+      "refusal",
+      "machine unlearning",
+      "AI safety"
+    ],
+    "top_n": 5
+  }
+]

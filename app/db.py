@@ -19,7 +19,8 @@ def conn():
     c.row_factory = sqlite3.Row     # rows behave like dicts
     return c
 
-def init():
+def init(recover_pending: bool = True):
+    """Create/migrate tables. recover_pending=False skips the restart cleanup (for other processes)."""
     with conn() as c:
         c.execute("""
         CREATE TABLE IF NOT EXISTS bookmarks(
@@ -36,6 +37,25 @@ def init():
           error TEXT
         )""")
         _migrate(c)
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS digests(
+          id INTEGER PRIMARY KEY,
+          watchlist TEXT NOT NULL,
+          run_at TEXT NOT NULL DEFAULT (datetime('now')),
+          ranked_by TEXT
+        )""")
+        if "ranked_by" not in {r["name"] for r in c.execute("PRAGMA table_info(digests)")}:
+            c.execute("ALTER TABLE digests ADD COLUMN ranked_by TEXT")
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS digest_items(
+          digest_id INTEGER NOT NULL REFERENCES digests(id),
+          bookmark_id INTEGER NOT NULL REFERENCES bookmarks(id),
+          rank INTEGER NOT NULL,
+          why TEXT,
+          PRIMARY KEY (digest_id, bookmark_id)
+        )""")
+        if not recover_pending:
+            return
         # Background jobs don't survive a restart, so anything still pending
         # (including rows from before extraction existed) can never finish.
         # Mark them failed so they can be retried.
@@ -116,3 +136,78 @@ def set_pending(bid: int) -> bool:
             (bid,),
         )
         return cur.rowcount == 1
+
+SEARCH_FIELDS = ("title", "url", "author", "note", "text")
+
+def _like_pattern(word: str) -> str:
+    escaped = word.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+def search(query: str, limit: int = 20, platform: str | None = None) -> list[dict]:
+    """Every word must appear (case-insensitive for ASCII) in at least one text field. Newest first."""
+    clauses, params = [], []
+    for word in query.split():
+        clauses.append("(" + " OR ".join(f"{f} LIKE ? ESCAPE '\\'" for f in SEARCH_FIELDS) + ")")
+        params.extend([_like_pattern(word)] * len(SEARCH_FIELDS))
+    if platform:
+        clauses.append("platform = ?")
+        params.append(platform)
+    where = "WHERE " + " AND ".join(clauses) if clauses else ""
+    params.append(max(int(limit), 0))
+    with conn() as c:
+        return [dict(r) for r in c.execute(
+            f"SELECT * FROM bookmarks {where} ORDER BY created_at DESC, id DESC LIMIT ?", params
+        )]
+
+def save_digest(watchlist: str, picks: list[dict],
+                ranked_by: str | None = None) -> tuple[int, list[tuple[int, bool]]]:
+    """Save a digest in one transaction. ranked_by: "ai", "prescore" or "prescore_fallback".
+
+    Each pick has url, platform, title, author, text, note, rank, why. A pick whose URL is
+    already bookmarked reuses that row unchanged (its note is kept). Returns
+    (digest_id, [(bookmark_id, created), ...]) in pick order.
+    """
+    saved = []
+    with conn() as c:
+        digest_id = c.execute(
+            "INSERT INTO digests(watchlist, ranked_by) VALUES (?, ?) RETURNING id", (watchlist, ranked_by)
+        ).fetchone()[0]
+        for p in picks:
+            row = c.execute(
+                """INSERT INTO bookmarks(url, platform, title, author, text, note, status)
+                   VALUES (?, ?, ?, ?, ?, ?, 'ready')
+                   ON CONFLICT(url) DO NOTHING
+                   RETURNING id""",
+                (p["url"], p["platform"], p["title"], p["author"], p["text"], p["note"]),
+            ).fetchone()
+            created = row is not None
+            bid = row[0] if created else c.execute(
+                "SELECT id FROM bookmarks WHERE url = ?", (p["url"],)
+            ).fetchone()[0]
+            c.execute(
+                """INSERT INTO digest_items(digest_id, bookmark_id, rank, why) VALUES (?, ?, ?, ?)
+                   ON CONFLICT(digest_id, bookmark_id) DO NOTHING""",
+                (digest_id, bid, p["rank"], p["why"]),
+            )
+            saved.append((bid, created))
+    return digest_id, saved
+
+def latest_digests(watchlist: str | None = None) -> list[dict]:
+    """The newest digest per watchlist (or just for `watchlist`), newest first, with ranked items."""
+    with conn() as c:
+        digests = [dict(r) for r in c.execute(
+            """SELECT * FROM digests d
+               WHERE d.id = (SELECT MAX(id) FROM digests WHERE watchlist = d.watchlist)
+                 AND (? IS NULL OR d.watchlist = ?)
+               ORDER BY d.run_at DESC, d.id DESC""",
+            (watchlist, watchlist),
+        )]
+        for d in digests:
+            d["items"] = [dict(r) for r in c.execute(
+                """SELECT di.rank, di.why, b.id, b.title, b.url, b.author
+                   FROM digest_items di JOIN bookmarks b ON b.id = di.bookmark_id
+                   WHERE di.digest_id = ?
+                   ORDER BY di.rank""",
+                (d["id"],),
+            )]
+    return digests

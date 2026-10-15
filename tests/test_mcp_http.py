@@ -1,19 +1,13 @@
 import asyncio
 import json
-import pathlib
-import tempfile
 
 import httpx
 import pytest
 from starlette.testclient import TestClient
 
 import app.db as db
-
-# app.main runs db.init() on import; point it at a throwaway file first.
-db.DB_PATH = pathlib.Path(tempfile.mkdtemp()) / "import.db"
-
-import app.main as web  # noqa: E402
-import mcp_http_server as srv  # noqa: E402
+import app.main as web
+import mcp_http_server as srv
 
 TOKEN = "test-token-" + "x" * 32
 

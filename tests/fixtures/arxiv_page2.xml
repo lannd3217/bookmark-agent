@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/fake2</id>
+  <title>arXiv Query: fake</title>
+  <opensearch:itemsPerPage>2</opensearch:itemsPerPage>
+  <opensearch:totalResults>3</opensearch:totalResults>
+  <opensearch:startIndex>2</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/2610.10003v1</id>
+    <title>A Language Model for Yoruba</title>
+    <published>2026-10-12T08:00:00Z</published>
+    <summary>We train a language model for a low-resource language.</summary>
+    <author><name>Femi Ade</name></author>
+    <author><name>Grace Obi</name></author>
+  </entry>
+</feed>

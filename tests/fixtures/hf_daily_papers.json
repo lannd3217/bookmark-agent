@@ -1,0 +1,8 @@
+[
+  {"paper": {"id": "2610.10001", "upvotes": 42, "title": "Tokenizer Choice Shapes Multilingual Fairness"},
+   "publishedAt": "2026-10-14T20:00:00.000Z", "title": "Tokenizer Choice Shapes Multilingual Fairness", "numComments": 3},
+  {"paper": {"id": "2610.99999", "upvotes": 7, "title": "Unrelated paper"},
+   "publishedAt": "2026-10-14T20:00:00.000Z", "title": "Unrelated paper", "numComments": 0},
+  {"paper": {"id": "2610.10003", "upvotes": "not a number"}},
+  {"not_a_paper": true}
+]

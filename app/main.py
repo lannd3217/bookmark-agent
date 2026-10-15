@@ -1,16 +1,26 @@
 import logging
+import os
 from datetime import datetime
 
+from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from pathlib import Path
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from . import db
+
+# Before importing agent, whose Anthropic client reads ANTHROPIC_API_KEY when created.
+load_dotenv(Path(__file__).parent.parent / ".env")
+
+import anthropic
+from . import agent, db
+from .claude_log import instrument
 from .extract import fetch_page
 from .importers.facebook import parse_facebook_saves
 from .platforms import detect_platform, normalize_url
 
 log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+instrument(agent.client)
 
 app = FastAPI(title="Bookmark Agent")
 db.init()
@@ -27,6 +37,9 @@ class SaveIn(BaseModel):
 
 class ImportIn(BaseModel):
     path: str = DEFAULT_FACEBOOK_EXPORT
+
+class AskIn(BaseModel):
+    question: str = Field(min_length=1, max_length=500)
 
 async def run_extraction(bid: int, url: str):
     # Runs after the response is sent; must never raise.
@@ -83,8 +96,35 @@ def import_facebook(background: BackgroundTasks, inp: ImportIn | None = None):
     return {"found": len(items), "added": added, "skipped": len(items) - added}
 
 @app.get("/api/bookmarks")
-def list_bookmarks():
+def list_bookmarks(q: str | None = None, platform: str | None = None):
+    if q or platform:
+        return db.search(q or "", platform=platform)
     return db.list_all()
+
+@app.get("/api/digests/latest")
+def latest_digests(watchlist: str | None = None):
+    return {"digests": db.latest_digests(watchlist)}
+
+@app.post("/api/ask")
+def ask(inp: AskIn):
+    question = inp.question.strip()
+    if not question:
+        raise HTTPException(status_code=422, detail="Question must not be empty")
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=503, detail="Ask is unavailable: ANTHROPIC_API_KEY is not set on the server")
+    try:
+        result = agent.ask(question)
+    except anthropic.AuthenticationError:
+        raise HTTPException(status_code=503, detail="Ask is unavailable: the Anthropic API key was rejected")
+    except anthropic.APIError as exc:
+        log.warning("Anthropic API error: %s", type(exc).__name__)
+        raise HTTPException(status_code=502, detail="The Anthropic API request failed; try again")
+    items = []
+    for bid in result.get("item_ids", []):
+        row = db.get(bid)
+        if row:
+            items.append({k: row.get(k) for k in ("id", "title", "url", "platform")})
+    return {"answer": result["answer"], "steps": result.get("steps"), "items": items}
 
 @app.post("/api/bookmarks/{bid}/retry")
 def retry_bookmark(bid: int, background: BackgroundTasks):

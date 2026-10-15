@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.bookmarkagent.weekly</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/landinh/Projects/bookmark-agent/.venv/bin/python</string>
+    <string>-m</string>
+    <string>app.jobs.weekly_digest</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/landinh/Projects/bookmark-agent</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PYTHONUNBUFFERED</key>
+    <string>1</string>
+  </dict>
+
+  <!-- Every Monday at 08:00 local time. If the Mac is asleep then, launchd runs it on wake. -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>1</integer>
+    <key>Hour</key>
+    <integer>8</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <!-- logs/ must exist; launchd does not create it. -->
+  <key>StandardOutPath</key>
+  <string>/Users/landinh/Projects/bookmark-agent/logs/weekly_digest.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/landinh/Projects/bookmark-agent/logs/weekly_digest.log</string>
+</dict>
+</plist>

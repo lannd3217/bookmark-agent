@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/fake1</id>
+  <title>arXiv Query: fake</title>
+  <updated>2026-10-15T07:45:56Z</updated>
+  <opensearch:itemsPerPage>2</opensearch:itemsPerPage>
+  <opensearch:totalResults>3</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/2610.10001v2</id>
+    <title>Tokenizer Choice Shapes
+      Multilingual Fairness</title>
+    <updated>2026-10-14T17:53:46Z</updated>
+    <published>2026-10-14T12:00:00Z</published>
+    <summary>  We study how the tokenizer affects
+      low-resource languages.  </summary>
+    <author><name>Ana Silva</name></author>
+    <author><name>Bao Tran</name></author>
+    <author><name>Chen Wei</name></author>
+    <author><name>Dara Okafor</name></author>
+    <link href="https://arxiv.org/abs/2610.10001v2" rel="alternate" type="text/html"/>
+    <arxiv:primary_category term="cs.CL"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2610.10002v1</id>
+    <title>Faster Attention Kernels</title>
+    <updated>2026-10-10T09:00:00Z</updated>
+    <published>2026-10-10T09:00:00Z</published>
+    <summary>A systems paper about attention speed.</summary>
+    <author><name>Eve Martin</name></author>
+    <arxiv:primary_category term="cs.LG"/>
+  </entry>
+</feed>
