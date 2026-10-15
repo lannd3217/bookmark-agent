@@ -76,7 +76,7 @@ def test_direct_answer(library, monkeypatch):
     assert result == {"answer": "Hello! Nothing to look up.", "steps": 1, "item_ids": []}
     assert len(fake.calls) == 1
     assert fake.calls[0]["messages"] == [{"role": "user", "content": "hi"}]
-    assert {t["name"] for t in fake.calls[0]["tools"]} == {"search_library", "get_item"}
+    assert {t["name"] for t in fake.calls[0]["tools"]} == {"search_library", "get_item", "get_weekly_digest"}
 
 
 def test_one_tool_call_then_answer(library, monkeypatch):
@@ -119,6 +119,58 @@ def test_step_limit(library, monkeypatch):
     assert result["steps"] == agent.MAX_STEPS
     assert "step limit" in result["answer"]
     assert result["item_ids"] == [library["probe"]]
+
+
+@pytest.fixture
+def digest(library):
+    """Two watchlists' latest digests; returns the bookmark ids by watchlist."""
+    db.save_digest("alignment", [
+        {"url": "https://arxiv.org/abs/2610.00001", "platform": "arxiv", "title": "Reward hacking study",
+         "author": None, "text": "abstract", "note": None, "rank": 1, "why": "Shows a new failure mode."},
+    ])
+    db.save_digest("interpretability", [
+        {"url": "https://arxiv.org/abs/2610.00002", "platform": "arxiv", "title": "SAE features",
+         "author": None, "text": "abstract", "note": None, "rank": 1, "why": "Better SAE evals."},
+    ])
+    return {r["watchlist"]: r["id"] for r in db.latest_digest_items()}
+
+
+def test_get_weekly_digest_for_one_watchlist(digest, monkeypatch):
+    fake = use_fake(monkeypatch, [
+        response("tool_use", tool_use("tu_1", "get_weekly_digest", {"watchlist": "alignment"})),
+        response("end_turn", text(f"This week: [{digest['alignment']}] Reward hacking study.")),
+    ])
+    result = agent.ask("what's new in alignment this week?")
+
+    [res] = tool_results(fake.calls[1])
+    rows = json.loads(res["content"])
+    assert [(r["watchlist"], r["rank"], r["title"], r["why"]) for r in rows] == [
+        ("alignment", 1, "Reward hacking study", "Shows a new failure mode."),
+    ]
+    assert result["item_ids"] == [digest["alignment"]]
+    assert result["steps"] == 2
+    assert "Today is " in fake.calls[0]["system"]
+
+
+def test_get_weekly_digest_without_watchlist_returns_all(digest, monkeypatch):
+    fake = use_fake(monkeypatch, [
+        response("tool_use", tool_use("tu_1", "get_weekly_digest", {})),
+        response("end_turn", text("Here is this week's digest.")),
+    ])
+    result = agent.ask("top papers this week?")
+    rows = json.loads(tool_results(fake.calls[1])[0]["content"])
+    assert [r["watchlist"] for r in rows] == ["alignment", "interpretability"]
+    assert result["item_ids"] == sorted(digest.values())
+
+
+def test_get_weekly_digest_with_no_digest_yet(library, monkeypatch):
+    fake = use_fake(monkeypatch, [
+        response("tool_use", tool_use("tu_1", "get_weekly_digest", {})),
+        response("end_turn", text("There's no digest yet.")),
+    ])
+    result = agent.ask("this week's papers?")
+    assert json.loads(tool_results(fake.calls[1])[0]["content"]) == []
+    assert result["item_ids"] == []
 
 
 # --- /api/ask -----------------------------------------------------------------

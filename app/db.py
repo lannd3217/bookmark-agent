@@ -211,3 +211,16 @@ def latest_digests(watchlist: str | None = None) -> list[dict]:
                 (d["id"],),
             )]
     return digests
+
+def latest_digest_items(watchlist: str | None = None) -> list[dict]:
+    """One row per pick from the newest digest of each watchlist (or just `watchlist`).
+
+    Each row: id (bookmark id), title, url, watchlist, rank, why, run_at; ordered by watchlist, rank.
+    """
+    rows = [
+        {"id": item["id"], "title": item["title"], "url": item["url"], "watchlist": d["watchlist"],
+         "rank": item["rank"], "why": item["why"], "run_at": d["run_at"]}
+        for d in latest_digests(watchlist)
+        for item in d["items"]
+    ]
+    return sorted(rows, key=lambda r: (r["watchlist"], r["rank"]))
