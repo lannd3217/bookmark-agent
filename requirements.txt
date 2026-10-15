@@ -6,3 +6,4 @@ lxml_html_clean==0.4.5  # needed by trafilatura's justext dependency with lxml>=
 beautifulsoup4==4.15.0
 pytest==9.1.1
 mcp==2.3.0
+python-dotenv==1.2.4

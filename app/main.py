@@ -1,9 +1,10 @@
 import logging
+from datetime import datetime
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from pathlib import Path
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from . import db
 from .extract import fetch_page
 from .importers.facebook import parse_facebook_saves
@@ -21,6 +22,8 @@ DEFAULT_FACEBOOK_EXPORT = "data/facebook/saved_items.json"
 class SaveIn(BaseModel):
     url: str
     note: str | None = None
+    title: str | None = Field(None, max_length=1000)
+    saved_at: datetime | None = None
 
 class ImportIn(BaseModel):
     path: str = DEFAULT_FACEBOOK_EXPORT
@@ -46,7 +49,8 @@ def save(inp: SaveIn, background: BackgroundTasks):
     url = normalize_url(inp.url.strip())
     if not url.startswith(("https://", "http://")):
         raise HTTPException(status_code=400, detail="URL must start with http:// or https://")
-    bid, _ = _add_bookmark(url, inp.note, background)
+    saved_at = inp.saved_at.isoformat() if inp.saved_at else None
+    bid, _ = _add_bookmark(url, inp.note, background, inp.title, saved_at)
     return db.get(bid)
 
 def _add_bookmark(url: str, note: str | None, background: BackgroundTasks,
