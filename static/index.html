@@ -34,7 +34,7 @@
 </style>
 </head>
 <body>
-<h1>Bookmarks</h1>
+<h1>Bookmarks <button id="logout-btn" type="button" style="float: right; font-size: 13px;">Log out</button></h1>
 <section id="digest">
   <h2>This week</h2>
   <div id="digest-body"></div>
@@ -81,6 +81,11 @@ async function api(path, opts = {}) {
   } catch {
     throw new Error("Network error — is the server running?");
   }
+  // Session expired or missing: go log in again.
+  if (r.status === 401) {
+    location.href = "/login";
+    return new Promise(() => {});
+  }
   let data = null;
   const text = await r.text();
   if (text) {
@@ -95,6 +100,10 @@ async function api(path, opts = {}) {
   }
   return data;
 }
+
+document.getElementById("logout-btn").addEventListener("click", async () => {
+  try { await fetch("/logout", { method: "POST" }); } finally { location.href = "/login"; }
+});
 
 function el(tag, props = {}, ...children) {
   const n = document.createElement(tag);

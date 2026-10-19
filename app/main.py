@@ -3,16 +3,16 @@ import os
 from datetime import datetime
 
 from dotenv import load_dotenv
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Response
 from pathlib import Path
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
 # Before importing agent, whose Anthropic client reads ANTHROPIC_API_KEY when created.
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 import anthropic
-from . import agent, db
+from . import agent, auth, db
 from .claude_log import instrument
 from .extract import fetch_page
 from .importers.facebook import parse_facebook_saves
@@ -41,6 +41,34 @@ class ImportIn(BaseModel):
 class AskIn(BaseModel):
     question: str = Field(min_length=1, max_length=500)
 
+class LoginIn(BaseModel):
+    email: str = Field(max_length=320)
+    password: str = Field(max_length=1000)
+
+PUBLIC_PATHS = {"/login", "/health"}
+
+@app.middleware("http")
+async def require_login(request: Request, call_next):
+    # Everything except PUBLIC_PATHS needs a session, so new routes are protected by default.
+    if request.url.path in PUBLIC_PATHS or auth.auth_disabled():
+        return await call_next(request)
+    try:
+        ok, refreshed = await auth.check_session(request.cookies)
+    except auth.NotConfigured:
+        log.error("Login is not configured: set SUPABASE_URL, SUPABASE_ANON_KEY and ALLOWED_EMAIL")
+        return JSONResponse({"detail": "Login is not configured on the server"}, status_code=503)
+    if not ok:
+        if request.url.path.startswith("/api/"):
+            response = JSONResponse({"detail": "Not logged in"}, status_code=401)
+        else:
+            response = RedirectResponse("/login", status_code=303)
+        auth.clear_session_cookies(response)
+        return response
+    response = await call_next(request)
+    if refreshed:
+        auth.set_session_cookies(response, refreshed, request.url.hostname)
+    return response
+
 async def run_extraction(bid: int, url: str):
     # Runs after the response is sent; must never raise.
     try:
@@ -56,6 +84,32 @@ async def run_extraction(bid: int, url: str):
 @app.get("/")
 def hello():
     return FileResponse(STATIC / "index.html")
+
+@app.get("/health")
+def health():
+    return {"ok": True}
+
+@app.get("/login")
+def login_page():
+    return FileResponse(STATIC / "login.html")
+
+@app.post("/login")
+async def login(inp: LoginIn, request: Request):
+    try:
+        session = await auth.sign_in(inp.email, inp.password)
+    except auth.NotConfigured:
+        raise HTTPException(status_code=503, detail="Login is not configured on the server")
+    except auth.AuthError as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
+    response = JSONResponse({"ok": True})
+    auth.set_session_cookies(response, session, request.url.hostname)
+    return response
+
+@app.post("/logout")
+def logout():
+    response = JSONResponse({"ok": True})
+    auth.clear_session_cookies(response)
+    return response
 
 @app.post("/api/bookmarks")
 def save(inp: SaveIn, background: BackgroundTasks):

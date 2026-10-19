@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log in · Bookmarks</title>
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; max-width: 360px; margin: 48px auto; padding: 0 16px; }
+  form { display: flex; flex-direction: column; gap: 8px; }
+  input { padding: 8px; font: inherit; }
+  button { padding: 8px 14px; font: inherit; cursor: pointer; }
+  #status { color: #b00020; min-height: 1.5em; }
+</style>
+</head>
+<body>
+<h1>Bookmarks</h1>
+<form id="login-form">
+  <input id="email" type="email" placeholder="Email" autocomplete="username" required>
+  <input id="password" type="password" placeholder="Password" autocomplete="current-password" required>
+  <button id="login-btn" type="submit">Log in</button>
+</form>
+<p id="status" role="alert"></p>
+<script>
+const form = document.getElementById("login-form");
+const statusEl = document.getElementById("status");
+const btn = document.getElementById("login-btn");
+
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  statusEl.textContent = "";
+  btn.disabled = true;
+  try {
+    const r = await fetch("/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value,
+      }),
+    });
+    if (r.ok) { location.href = "/"; return; }
+    const data = await r.json().catch(() => null);
+    statusEl.textContent = (data && typeof data.detail === "string") ? data.detail : `Login failed (${r.status})`;
+  } catch {
+    statusEl.textContent = "Network error — is the server running?";
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
