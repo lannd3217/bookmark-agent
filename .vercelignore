@@ -1,0 +1,9 @@
+.venv/
+bookmarks.db
+data/
+logs/
+tests/
+.env
+deploy/
+scripts/
+mcp_http_server.py

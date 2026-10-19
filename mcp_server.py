@@ -2,6 +2,8 @@
 
 Talks to the running web app over HTTP only (it does not import app/).
 Run with:  .venv/bin/python mcp_server.py   (stdio transport)
+Env: BOOKMARKS_URL (default http://127.0.0.1:8000); BOOKMARKS_TOKEN, the web app's
+API_TOKEN, sent as `Authorization: Bearer <token>` when set (needed for a deployed app).
 """
 import os
 
@@ -11,6 +13,8 @@ from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
 BASE_URL = os.environ.get("BOOKMARKS_URL", "http://127.0.0.1:8000").rstrip("/")
+TOKEN = os.environ.get("BOOKMARKS_TOKEN", "").strip()
+HEADERS = {"Authorization": f"Bearer {TOKEN}"} if TOKEN else {}
 TIMEOUT = 10.0
 SEARCH_LIMIT = 10
 TEXT_PREVIEW = 1500
@@ -21,7 +25,7 @@ READ_ONLY = ToolAnnotations(readOnlyHint=True)
 
 async def _fetch_bookmarks(params: dict | None = None) -> list[dict]:
     try:
-        async with httpx.AsyncClient(base_url=BASE_URL, timeout=TIMEOUT) as client:
+        async with httpx.AsyncClient(base_url=BASE_URL, timeout=TIMEOUT, headers=HEADERS) as client:
             r = await client.get("/api/bookmarks", params=params)
             r.raise_for_status()
     # ToolError messages reach the model; other exceptions are hidden behind a generic error.

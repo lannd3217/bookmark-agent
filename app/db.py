@@ -57,6 +57,17 @@ def database_url() -> str | None:
 def is_postgres() -> bool:
     return database_url() is not None
 
+def on_vercel() -> bool:
+    return bool(os.environ.get("VERCEL"))
+
+def require_database_on_vercel():
+    """Vercel's filesystem is read-only, so there it's Postgres or nothing."""
+    if on_vercel() and not is_postgres():
+        raise RuntimeError(
+            "DATABASE_URL is not set. On Vercel the app needs Postgres (SQLite can't be used "
+            "there); add DATABASE_URL in the project's Environment Variables and redeploy."
+        )
+
 class _PgConn:
     """psycopg connection that accepts `?` placeholders; `with` commits (or rolls back) and closes."""
 
@@ -185,6 +196,13 @@ def insert(url: str, note: str | None, platform: str,
                RETURNING id""",
             (note, url),
         ).fetchone()["id"], False
+
+def list_pending(limit: int) -> list[dict]:
+    """Up to `limit` pending bookmarks, oldest first."""
+    with conn() as c:
+        return [dict(r) for r in c.execute(
+            "SELECT * FROM bookmarks WHERE status = 'pending' ORDER BY id LIMIT ?", (max(int(limit), 0),)
+        )]
 
 def url_exists(url: str) -> bool:
     with conn() as c:

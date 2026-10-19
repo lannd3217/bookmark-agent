@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "index.py": {
+      "maxDuration": 300,
+      "includeFiles": "{static/**,config/**}"
+    }
+  },
+  "crons": [
+    { "path": "/api/cron/weekly-digest", "schedule": "0 15 * * 1" },
+    { "path": "/api/cron/process-pending", "schedule": "0 14 * * *" }
+  ]
+}

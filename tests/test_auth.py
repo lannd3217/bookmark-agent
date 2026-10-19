@@ -35,7 +35,8 @@ def login_on(tmp_path, monkeypatch):
     monkeypatch.setattr(auth, "verify", fake_verify)
     monkeypatch.setattr(auth, "refresh", fake_refresh)
     monkeypatch.setattr(auth, "_auth_request", fake_auth_request)
-    client = TestClient(web.app, follow_redirects=False)
+    # https: session cookies are Secure everywhere except localhost.
+    client = TestClient(web.app, base_url="https://testserver", follow_redirects=False)
     client.supabase_calls = supabase_calls
     return client
 

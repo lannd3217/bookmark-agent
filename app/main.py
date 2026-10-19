@@ -1,7 +1,9 @@
+import asyncio
 import logging
 import os
 from datetime import datetime
 
+import anyio
 from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Response
 from pathlib import Path
@@ -23,11 +25,19 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 instrument(agent.client)
 
 app = FastAPI(title="Bookmark Agent")
-db.init()
+db.require_database_on_vercel()
+# On Vercel, instances start and stop all the time and pending rows wait for the
+# process-pending cron, so skip the restart cleanup there.
+db.init(recover_pending=not db.on_vercel())
+if problem := auth.api_token_problem():
+    log.error(problem)
 
 ROOT = Path(__file__).parent.parent
 STATIC = ROOT / "static"
 DEFAULT_FACEBOOK_EXPORT = "data/facebook/saved_items.json"
+EXTRACT_TIMEOUT = 10.0      # seconds, for inline (Vercel) and cron extraction
+PENDING_BATCH = 20          # items per process-pending run
+PENDING_CONCURRENCY = 5
 
 class SaveIn(BaseModel):
     url: str
@@ -46,20 +56,34 @@ class LoginIn(BaseModel):
     password: str = Field(max_length=1000)
 
 PUBLIC_PATHS = {"/login", "/health"}
+CRON_PREFIX = "/api/cron/"
+
+def _unauthorized() -> JSONResponse:
+    return JSONResponse({"detail": "Not logged in"}, status_code=401)
 
 @app.middleware("http")
 async def require_login(request: Request, call_next):
     # Everything except PUBLIC_PATHS needs a session, so new routes are protected by default.
-    if request.url.path in PUBLIC_PATHS or auth.auth_disabled():
+    path = request.url.path
+    if path in PUBLIC_PATHS:
         return await call_next(request)
+    header = request.headers.get("authorization")
+    if path.startswith(CRON_PREFIX):
+        # Cron routes take CRON_SECRET only: no session, no API token, even with AUTH_DISABLED.
+        return await call_next(request) if auth.cron_authorized(header) else _unauthorized()
+    if auth.auth_disabled():
+        return await call_next(request)
+    if path.startswith("/api/") and header is not None:
+        # A bearer token must be API_TOKEN; a wrong one doesn't fall back to the session.
+        return await call_next(request) if auth.api_token_authorized(header) else _unauthorized()
     try:
         ok, refreshed = await auth.check_session(request.cookies)
     except auth.NotConfigured:
         log.error("Login is not configured: set SUPABASE_URL, SUPABASE_ANON_KEY and ALLOWED_EMAIL")
         return JSONResponse({"detail": "Login is not configured on the server"}, status_code=503)
     if not ok:
-        if request.url.path.startswith("/api/"):
-            response = JSONResponse({"detail": "Not logged in"}, status_code=401)
+        if path.startswith("/api/"):
+            response = _unauthorized()
         else:
             response = RedirectResponse("/login", status_code=303)
         auth.clear_session_cookies(response)
@@ -69,11 +93,13 @@ async def require_login(request: Request, call_next):
         auth.set_session_cookies(response, refreshed, request.url.hostname)
     return response
 
-async def run_extraction(bid: int, url: str):
-    # Runs after the response is sent; must never raise.
+async def run_extraction(bid: int, url: str, timeout: float | None = None):
+    # Sets the bookmark ready or failed; must never raise.
     try:
         try:
-            data = await fetch_page(url)
+            data = await asyncio.wait_for(fetch_page(url), timeout)
+        except TimeoutError:
+            db.set_failed(bid, f"Extraction timed out after {timeout:g}s")
         except Exception as exc:
             db.set_failed(bid, str(exc) or type(exc).__name__)
         else:
@@ -121,12 +147,21 @@ def save(inp: SaveIn, background: BackgroundTasks):
     return db.get(bid)
 
 def _add_bookmark(url: str, note: str | None, background: BackgroundTasks,
-                  title: str | None = None, created_at: str | None = None) -> tuple[int, bool]:
-    """Insert a normalized URL as pending and queue extraction if it's new."""
+                  title: str | None = None, created_at: str | None = None,
+                  extract: bool = True) -> tuple[int, bool]:
+    """Insert a normalized URL as pending and, if it's new and `extract`, extract it."""
     bid, created = db.insert(url, note, detect_platform(url), title, created_at)
-    if created:
-        background.add_task(run_extraction, bid, url)
+    if created and extract:
+        _extract(bid, url, background)
     return bid, created
+
+def _extract(bid: int, url: str, background: BackgroundTasks):
+    """Locally: after the response. On Vercel, work after the response isn't guaranteed to
+    run, so extract now (from this sync route's worker thread) with a timeout."""
+    if db.on_vercel():
+        anyio.from_thread.run(run_extraction, bid, url, EXTRACT_TIMEOUT)
+    else:
+        background.add_task(run_extraction, bid, url)
 
 @app.post("/api/import/facebook")
 def import_facebook(background: BackgroundTasks, inp: ImportIn | None = None):
@@ -145,7 +180,9 @@ def import_facebook(background: BackgroundTasks, inp: ImportIn | None = None):
         # Facebook exports can contain non-web URIs (e.g. local media paths); skip those.
         if not url.startswith(("https://", "http://")) or db.url_exists(url):
             continue
-        _, created = _add_bookmark(url, None, background, item["title"], item["created_at"])
+        # On Vercel, imports stay pending for the process-pending cron.
+        _, created = _add_bookmark(url, None, background, item["title"], item["created_at"],
+                                   extract=not db.on_vercel())
         added += created
     return {"found": len(items), "added": added, "skipped": len(items) - added}
 
@@ -187,10 +224,35 @@ def retry_bookmark(bid: int, background: BackgroundTasks):
         raise HTTPException(status_code=404, detail="Bookmark not found")
     if not db.set_pending(bid):
         raise HTTPException(status_code=409, detail=f"Only failed bookmarks can be retried (status is {row['status']})")
-    background.add_task(run_extraction, bid, row["url"])
+    _extract(bid, row["url"], background)
     return db.get(bid)
 
 @app.delete("/api/bookmarks/{bid}")
 def delete_bookmark(bid: int):
     db.delete(bid)
+    return {"ok": True}
+
+# --- cron (Vercel calls these with Authorization: Bearer <CRON_SECRET>) ----------
+
+@app.get("/api/cron/process-pending")
+async def cron_process_pending():
+    rows = db.list_pending(PENDING_BATCH)
+    limit = asyncio.Semaphore(PENDING_CONCURRENCY)
+
+    async def one(row):
+        async with limit:
+            await run_extraction(row["id"], row["url"], EXTRACT_TIMEOUT)
+
+    await asyncio.gather(*(one(r) for r in rows))
+    statuses = [(db.get(r["id"]) or {}).get("status") for r in rows]
+    result = {"processed": len(rows), "ready": statuses.count("ready"), "failed": statuses.count("failed")}
+    log.info("process-pending: %s", result)
+    return result
+
+@app.get("/api/cron/weekly-digest")
+def cron_weekly_digest():
+    from .jobs import weekly_digest
+    code = weekly_digest.main([])
+    if code != 0:
+        raise HTTPException(status_code=500, detail=f"Weekly digest failed (exit code {code}); see the function logs")
     return {"ok": True}

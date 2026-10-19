@@ -7,6 +7,9 @@ import tempfile
 # db treats an empty DATABASE_URL as unset. Auth is off unless a test turns it on.
 os.environ["DATABASE_URL"] = ""
 os.environ["AUTH_DISABLED"] = "1"
+os.environ["CRON_SECRET"] = ""
+os.environ["API_TOKEN"] = ""
+os.environ.pop("VERCEL", None)
 
 import app.db as db
 
