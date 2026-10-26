@@ -1,6 +1,7 @@
 [
   {
     "name": "interpretability",
+    "category": "Interpretability",
     "domain": "Mechanistic interpretability and model internals for AI safety: understanding what models represent and compute, probes, sparse autoencoders, circuits, steering, and using internals to detect unsafe behavior.",
     "arxiv_categories": ["cs.LG", "cs.AI", "cs.CL"],
     "keywords": [
@@ -18,6 +19,7 @@
   },
   {
     "name": "alignment",
+    "category": "Alignment & oversight",
     "domain": "Alignment and oversight of advanced AI: reward hacking, deceptive or scheming behavior, scalable oversight, chain-of-thought monitoring and faithfulness, situational awareness, and model organisms of misalignment.",
     "arxiv_categories": ["cs.LG", "cs.AI", "cs.CL"],
     "keywords": [
@@ -40,6 +42,7 @@
   },
   {
     "name": "robustness-evals",
+    "category": "Robustness & evaluations",
     "domain": "Safety evaluations and robustness: dangerous capability evaluations, jailbreaks and defenses, red teaming, adversarial robustness of language models, refusal behavior, and unlearning of hazardous knowledge.",
     "arxiv_categories": ["cs.LG", "cs.AI", "cs.CL", "cs.CR"],
     "keywords": [

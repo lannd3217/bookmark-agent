@@ -28,6 +28,19 @@ are skipped):
 .venv/bin/python scripts/migrate_sqlite_to_postgres.py
 ```
 
+### Library shelves
+
+Shelves live in the `categories` table. On first start it is seeded from
+`config/categories.json`; after that, manage shelves in the Library (`/library`) and the file is
+not read again. New bookmarks are shelved by `app/categorize.py` after extraction; weekly-digest
+papers go on the shelf named by their watchlist's `category`. To shelve existing bookmarks:
+
+```sh
+.venv/bin/python scripts/categorize_backfill.py --dry-run   # show what would happen
+.venv/bin/python scripts/categorize_backfill.py             # only items with no shelf
+.venv/bin/python scripts/categorize_backfill.py --redo      # also redo the AI's choices (never yours or the digest's)
+```
+
 ### Environment variables
 
 Set these in the environment or in `.env` (git-ignored).

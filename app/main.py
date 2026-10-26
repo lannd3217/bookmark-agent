@@ -2,19 +2,20 @@ import asyncio
 import logging
 import os
 from datetime import datetime
+from typing import Annotated, Literal
 
 import anyio
 from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Response
 from pathlib import Path
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 # Before importing agent, whose Anthropic client reads ANTHROPIC_API_KEY when created.
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 import anthropic
-from . import agent, auth, db
+from . import agent, auth, db, shelves
 from .claude_log import instrument
 from .extract import fetch_page
 from .importers.facebook import parse_facebook_saves
@@ -54,6 +55,21 @@ class AskIn(BaseModel):
 class LoginIn(BaseModel):
     email: str = Field(max_length=320)
     password: str = Field(max_length=1000)
+
+ShelfName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=40)]
+ShelfDescription = Annotated[str, StringConstraints(strip_whitespace=True, max_length=200)]
+
+class CategoryIn(BaseModel):
+    name: ShelfName
+    description: ShelfDescription = ""
+
+class CategoryPatch(BaseModel):
+    name: ShelfName | None = None
+    description: ShelfDescription | None = None
+    position: int | None = Field(None, ge=0)
+
+class BookmarkPatch(BaseModel):
+    category_id: int
 
 PUBLIC_PATHS = {"/login", "/health"}
 CRON_PREFIX = "/api/cron/"
@@ -104,12 +120,18 @@ async def run_extraction(bid: int, url: str, timeout: float | None = None):
             db.set_failed(bid, str(exc) or type(exc).__name__)
         else:
             db.update_extracted(bid, {**data, "platform": detect_platform(url)})
+            # categorize() is a blocking API call; shelve() never raises.
+            await anyio.to_thread.run_sync(shelves.shelve, bid)
     except Exception:
         log.exception("Extraction bookkeeping failed for bookmark %s", bid)
 
 @app.get("/")
 def hello():
     return FileResponse(STATIC / "index.html")
+
+@app.get("/library")
+def library_page():
+    return FileResponse(STATIC / "library.html")
 
 @app.get("/health")
 def health():
@@ -187,10 +209,79 @@ def import_facebook(background: BackgroundTasks, inp: ImportIn | None = None):
     return {"found": len(items), "added": added, "skipped": len(items) - added}
 
 @app.get("/api/bookmarks")
-def list_bookmarks(q: str | None = None, platform: str | None = None):
-    if q or platform:
-        return db.search(q or "", platform=platform)
-    return db.list_all()
+def list_bookmarks(q: str | None = None, platform: str | None = None, category_id: int | None = None,
+                   kind: Literal["paper", "post", "article"] | None = None,
+                   sort: Literal["newest", "oldest", "title"] | None = None):
+    if not (q or platform or category_id is not None or kind or sort):
+        return db.list_all()    # newest saved first, for the home page
+    return db.list_bookmarks(q=q, platform=platform, category_id=category_id, kind=kind, sort=sort or "newest")
+
+@app.patch("/api/bookmarks/{bid}")
+def update_bookmark(bid: int, inp: BookmarkPatch):
+    if not db.get(bid):
+        raise HTTPException(status_code=404, detail="Bookmark not found")
+    try:
+        db.set_category(bid, inp.category_id, "user")
+    except db.ShelfError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return db.get(bid)
+
+# --- shelves ------------------------------------------------------------------
+
+def _shelf_error(exc: Exception) -> HTTPException:
+    if isinstance(exc, db.ShelfNotFound):
+        return HTTPException(status_code=404, detail=str(exc))
+    if isinstance(exc, db.DuplicateShelf):
+        return HTTPException(status_code=409, detail=str(exc))
+    return HTTPException(status_code=400, detail=str(exc))
+
+def _shelf_out(shelf: dict) -> dict:
+    return {k: shelf.get(k) for k in ("id", "name", "description", "count", "is_fallback")}
+
+@app.get("/api/categories")
+def list_categories():
+    totals = db.item_totals()
+    return {"all": totals["all"], "unsorted": totals["unsorted"],
+            "categories": [_shelf_out(s) for s in db.list_categories()]}
+
+def _category(cid: int) -> dict:
+    """A shelf as listed (with its count), for responses."""
+    return _shelf_out(next(s for s in db.list_categories() if s["id"] == cid))
+
+@app.post("/api/categories", status_code=201)
+def create_category(inp: CategoryIn):
+    try:
+        shelf = db.create_category(inp.name, inp.description)
+    except (db.ShelfError, db.ShelfNotFound) as exc:
+        raise _shelf_error(exc)
+    return _category(shelf["id"])
+
+@app.patch("/api/categories/{cid}")
+def update_category(cid: int, inp: CategoryPatch):
+    if inp.name is None and inp.description is None and inp.position is None:
+        raise HTTPException(status_code=422, detail="Nothing to change: send name, description or position")
+    try:
+        db.update_category(cid, inp.name, inp.description, inp.position)
+    except (db.ShelfError, db.ShelfNotFound) as exc:
+        raise _shelf_error(exc)
+    return _category(cid)
+
+@app.delete("/api/categories/{cid}")
+def delete_category(cid: int, move_to: int | None = None):
+    try:
+        result = db.delete_category(cid, move_to)
+    except (db.ShelfError, db.ShelfNotFound) as exc:
+        raise _shelf_error(exc)
+    return {"ok": True, "moved": result["moved"], "moved_to": _category(result["moved_to"]["id"])}
+
+@app.post("/api/categories/{cid}/resort")
+def resort_category(cid: int):
+    """Re-categorize up to 25 items the AI left on "Other", now that shelf `cid` exists."""
+    if not db.get_category(cid):
+        raise HTTPException(status_code=404, detail=f"No shelf with id {cid}")
+    result = shelves.resort_other()
+    return {"checked": result["checked"], "moved": result["moved"],
+            "moved_here": result["by_shelf"].get(cid, 0)}
 
 @app.get("/api/digests/latest")
 def latest_digests(watchlist: str | None = None):

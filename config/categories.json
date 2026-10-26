@@ -1,0 +1,10 @@
+[
+  {"name": "Interpretability", "description": "Understanding model internals: probes, sparse autoencoders, circuits, steering, representations."},
+  {"name": "Alignment & oversight", "description": "Reward hacking, deception and scheming, scalable oversight, chain-of-thought monitoring, model organisms."},
+  {"name": "Robustness & evaluations", "description": "Jailbreaks and defenses, red teaming, dangerous capability and safety evaluations, unlearning."},
+  {"name": "AI governance & policy", "description": "Regulation, standards, compute governance, lab policies, forecasting AI's societal impact."},
+  {"name": "Machine learning", "description": "General ML and LLM research not mainly about safety: training, architectures, RL, scaling."},
+  {"name": "AI tools & products", "description": "Apps, developer tools, agents, product launches, and how-to guides."},
+  {"name": "Learning & careers", "description": "Courses, reading lists, career advice, research skills, and productivity."},
+  {"name": "Other", "description": "Anything that fits none of the shelves above."}
+]

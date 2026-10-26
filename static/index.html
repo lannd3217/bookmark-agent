@@ -206,7 +206,7 @@ a.ref:hover { text-shadow: 0 0 10px rgba(121, 226, 255, .6); }
   .log li.ready:hover .actions, .log li.ready:focus-within .actions { opacity: 1; }
   .log li.ready:hover .when, .log li.ready:focus-within .when { opacity: 0; }
 }
-.more { margin-top: 14px; background: none; border: 0; padding: 4px 0; cursor: pointer; color: var(--accent); font-family: var(--mono); font-size: var(--fs-meta); }
+.more { display: inline-block; margin-top: 14px; padding: 4px 0; color: var(--accent); font-family: var(--mono); font-size: var(--fs-meta); }
 .more:hover { text-shadow: 0 0 10px rgba(121, 226, 255, .5); }
 
 /* Save */
@@ -249,7 +249,7 @@ footer { border-top: 1px solid var(--line); padding-block: 14px 36px; font-famil
   <header class="topbar">
     <a class="brand" href="/"><span class="mark" aria-hidden="true">PKC</span><span class="brand-name">Personal Knowledge Collection</span></a>
     <nav class="nav" aria-label="Main">
-      <a href="#recent-h" id="library-link">Library</a>
+      <a href="/library">Library</a>
       <button class="linkish" id="logout-btn" type="button">Log out</button>
     </nav>
   </header>
@@ -508,7 +508,7 @@ saveForm.addEventListener("submit", async e => {
 
 const RECENT_LIMIT = 5;
 const recentEl = document.getElementById("recent");
-let recentRows = [], showAll = false, seenIds = null, pollTimer = null, polls = 0;
+let recentRows = [], seenIds = null, pollTimer = null, polls = 0;
 
 function emptyNote(text, retry) {
   const p = el("p", { className: retry ? "empty error" : "empty", textContent: text });
@@ -543,14 +543,9 @@ function renderRecent() {
     recentEl.replaceChildren(emptyNote("Nothing saved yet. Use “+ Save a link” above to add your first one."));
     return;
   }
-  const shown = showAll ? recentRows : recentRows.slice(0, RECENT_LIMIT);
-  const nodes = [el("ul", { className: "log" }, ...shown.map(recentRow))];
+  const nodes = [el("ul", { className: "log" }, ...recentRows.slice(0, RECENT_LIMIT).map(recentRow))];
   if (recentRows.length > RECENT_LIMIT) {
-    nodes.push(el("button", {
-      className: "more", type: "button",
-      textContent: showAll ? "show fewer" : `show all ${recentRows.length} →`,
-      onclick: () => { showAll = !showAll; renderRecent(); },
-    }));
+    nodes.push(el("a", { className: "more", href: "/library", textContent: `show all ${recentRows.length} →` }));
   }
   recentEl.replaceChildren(...nodes);
   seenIds = new Set(recentRows.map(b => b.id));
@@ -593,10 +588,6 @@ recentEl.addEventListener("click", async e => {
     btn.closest("li").querySelector(".src").append(" · ",
       el("span", { className: "failed", textContent: `couldn't ${retry ? "retry" : "delete"}: ${err.message}` }));
   }
-});
-
-document.getElementById("library-link").addEventListener("click", () => {
-  if (!showAll && recentRows.length > RECENT_LIMIT) { showAll = true; renderRecent(); }
 });
 
 // --- This week -----------------------------------------------------------------

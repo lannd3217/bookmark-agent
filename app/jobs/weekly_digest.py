@@ -55,6 +55,8 @@ def load_watchlists(path: Path | None = None) -> list[dict]:
         kws = w.get("keywords", [])
         if not isinstance(kws, list) or not all(isinstance(k, str) for k in kws):
             raise ValueError(f"{where}: 'keywords' must be a list of strings")
+        if "category" in w and (not isinstance(w["category"], str) or not w["category"].strip()):
+            raise ValueError(f"{where}: 'category' must be the name of a shelf")
         top_n = w.get("top_n", 10)
         if not isinstance(top_n, int) or isinstance(top_n, bool) or not 1 <= top_n <= CANDIDATE_LIMIT:
             raise ValueError(f"{where}: 'top_n' must be an integer from 1 to {CANDIDATE_LIMIT}")
@@ -108,6 +110,21 @@ def ranking_method(ranked: list[dict], candidates: list[dict], top_n: int) -> st
     return "ai"
 
 
+def shelf_for(w: dict) -> int:
+    """The shelf id for this watchlist's papers, by its "category" name (no AI involved).
+    Falls back to "Other", with a warning, if that shelf was renamed or deleted."""
+    name = (w.get("category") or "").strip()
+    shelf = db.category_by_name(name) if name else None
+    if shelf:
+        return shelf["id"]
+    if name:
+        log.warning("Watchlist %r: no shelf named %r (renamed or deleted?); its papers go on %r",
+                    w["name"], name, db.FALLBACK)
+    else:
+        log.warning("Watchlist %r has no 'category'; its papers go on %r", w["name"], db.FALLBACK)
+    return db.fallback_category()["id"]
+
+
 def run_watchlist(w: dict, upvotes: dict[str, int], dry_run: bool) -> list[dict]:
     papers = arxiv.recent_papers(w["arxiv_categories"], w["keywords"])
     for p in papers:
@@ -129,7 +146,7 @@ def run_watchlist(w: dict, upvotes: dict[str, int], dry_run: bool) -> list[dict]
     if dry_run:
         print("   (dry run: not saved)")
     elif picks:
-        digest_id, saved = db.save_digest(w["name"], picks, ranked_by)
+        digest_id, saved = db.save_digest(w["name"], picks, ranked_by, category_id=shelf_for(w))
         added = sum(created for _, created in saved)
         print(f"   Saved digest #{digest_id}: {added} new bookmarks, {len(saved) - added} already saved.")
     return picks
