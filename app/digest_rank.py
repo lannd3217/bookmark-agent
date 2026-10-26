@@ -1,5 +1,7 @@
 import json, os
 
+from .llm import response_text
+
 USE_AI = os.getenv("DIGEST_USE_AI", "0") == "1"
 MODEL = os.getenv("RANK_MODEL", "claude-haiku-5-5")
 
@@ -30,7 +32,7 @@ def rank_with_ai(domain: str, candidates: list[dict], top_n: int) -> list[dict]:
         model=MODEL, max_tokens=2000, system=SYSTEM,
         messages=[{"role": "user", "content": f"Domain: {domain}\nPick up to {top_n}.\n\nCandidates:\n{listing}"}],
     )
-    raw = msg.content[0].text
+    raw = response_text(msg)
     picks = json.loads(raw[raw.find("{"): raw.rfind("}") + 1])["picks"]
     valid = {c["arxiv_id"] for c in candidates}  # grounding: drop anything not in the list
     return [p for p in picks if p.get("arxiv_id") in valid][:top_n]

@@ -1,6 +1,8 @@
 import json, os
 from pathlib import Path
 
+from .llm import response_text
+
 CATEGORIES_FILE = Path(__file__).parent.parent / "config" / "categories.json"
 MODEL = os.getenv("CATEGORIZE_MODEL", "claude-haiku-5-5")
 FALLBACK = "Other"
@@ -32,7 +34,7 @@ def categorize(item: dict, categories: list[dict] | None = None) -> str:
             model=MODEL, max_tokens=100, system=SYSTEM,
             messages=[{"role": "user", "content": content}],
         )
-        raw = msg.content[0].text
+        raw = response_text(msg)
         choice = json.loads(raw[raw.find("{"): raw.rfind("}") + 1]).get("category")
     except Exception as exc:
         print(f"Categorization failed ({exc}); using {FALLBACK}")

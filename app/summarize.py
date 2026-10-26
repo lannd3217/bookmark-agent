@@ -1,5 +1,7 @@
 import json, os
 
+from .llm import response_text
+
 MODEL = os.getenv("SUMMARY_MODEL", "claude-sonnet-5-5")
 MAX_CHARS = 60_000   # about 15,000 tokens; keeps cost and wait time reasonable
 MIN_CHARS = 400      # below this there isn't enough to summarize honestly
@@ -38,7 +40,7 @@ def summarize(title: str, text: str, source_kind: str) -> dict:
         messages=[{"role": "user", "content":
                    f"Title: {title}\nWhat this text is: {source_kind}\n\nText:\n{text[:MAX_CHARS]}"}],
     )
-    raw = msg.content[0].text
+    raw = response_text(msg)
     data = json.loads(raw[raw.find("{"): raw.rfind("}") + 1])
     return _clean(data)
 
