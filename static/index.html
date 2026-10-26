@@ -1,71 +1,308 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bookmarks</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Personal Knowledge Collection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-  body { font: 15px/1.5 system-ui, sans-serif; max-width: 680px; margin: 24px auto; padding: 0 16px; }
-  form { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-  input { flex: 1 1 200px; padding: 8px; font: inherit; }
-  button { padding: 8px 14px; font: inherit; cursor: pointer; }
-  button:disabled { opacity: .6; cursor: default; }
-  .card { border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; margin: 8px 0;
-          display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-  .card a { word-break: break-all; }
-  .note { color: #666; font-size: 13px; }
-  #status { min-height: 1.5em; color: #b00020; }
-  #ask { border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; margin-bottom: 16px; }
-  #ask form { margin-bottom: 0; }
-  #ask-answer { white-space: pre-wrap; margin: 10px 0 0; }
-  #ask-error { color: #b00020; margin: 8px 0 0; }
-  #ask-items { margin: 8px 0 0; padding-left: 20px; }
-  #ask-items a { word-break: break-all; }
-  [hidden] { display: none !important; }
-  #digest { border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; margin-bottom: 16px; }
-  #digest h2 { font-size: 18px; margin: 0 0 4px; }
-  #digest h3 { font-size: 14px; margin: 12px 0 4px; color: #444; }
-  #digest ol { margin: 4px 0 0; padding-left: 0; list-style: none; }
-  #digest li { margin: 8px 0; }
-  #digest a { word-break: break-word; }
-  .rank { font-weight: 600; margin-right: 4px; }
-  .ranked-by { font-weight: normal; font-size: 12px; color: #666; border: 1px solid #ddd;
-               border-radius: 4px; padding: 0 5px; margin-left: 6px; }
+/* Night lab: a 720px console column; sans for reading, mono for every machine-made value (IDs, dates, counts). One faint glow at the top, one luminous accent. Dark only by design. */
+:root {
+  --bg: #0a0c0f;
+  --bg-raise: #10141a;
+  --bg-hover: #141922;
+  --fg: #dfe4ea;
+  --fg-2: #a9b2bd;
+  --fg-3: #8590a0;
+  --line: #1e242d;
+  --line-2: #2a323e;
+  --accent: #79e2ff;
+  --accent-dim: #4fb3d1;
+  --accent-glow: rgba(121, 226, 255, .18);
+  --accent-ink: #04141a;
+  --danger: #ff9a9a;
+
+  --sans: "IBM Plex Sans", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --fs-meta: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.375rem;
+  --fs-xl: 1.875rem;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+body {
+  margin: 0; min-height: 100vh; color: var(--fg); font-family: var(--sans); font-size: var(--fs-md); line-height: 1.6;
+  background:
+    radial-gradient(60rem 28rem at 50% -8rem, rgba(121, 226, 255, .07), transparent 70%),
+    var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+[hidden] { display: none !important; }
+.wrap {
+  max-width: calc(720px + 40px); margin: 0 auto;
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+}
+a { color: inherit; text-decoration: none; }
+button { font: inherit; }
+button:disabled { opacity: .6; cursor: default; }
+:focus-visible { outline: 1.5px solid var(--accent); outline-offset: 3px; border-radius: 4px; box-shadow: 0 0 0 4px var(--accent-glow); }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+
+/* Top bar */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 18px; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
+/* PKC monogram: mono letters in a hairline accent frame, with a faint glow that brightens on hover */
+.mark {
+  flex: none; display: inline-grid; place-items: center; height: 28px; padding: 0 7px;
+  font-family: var(--mono); font-size: 0.75rem; font-weight: 500; letter-spacing: 0.08em; line-height: 1;
+  color: var(--accent); background: rgba(121, 226, 255, .06);
+  border: 1px solid rgba(121, 226, 255, .45); border-radius: 7px;
+  text-shadow: 0 0 10px rgba(121, 226, 255, .45);
+  box-shadow: 0 0 12px rgba(121, 226, 255, .10), inset 0 0 8px rgba(121, 226, 255, .06);
+  transition: box-shadow .25s, border-color .25s;
+}
+.brand:hover .mark { border-color: var(--accent); box-shadow: 0 0 18px var(--accent-glow), inset 0 0 8px rgba(121, 226, 255, .1); }
+.brand-name { min-width: 0; }
+@media (max-width: 559px) {
+  .brand-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+}
+.nav { display: flex; align-items: center; gap: 18px; font-size: var(--fs-sm); color: var(--fg-2); }
+.nav a, .nav .linkish { transition: color .2s; }
+.nav a:hover, .nav .linkish:hover { color: var(--accent); }
+.linkish { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; font-size: inherit; }
+
+.status { display: flex; flex-wrap: wrap; gap: 6px 18px; padding-block: 10px; min-height: 2.6em; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); }
+.status b { color: var(--fg-2); font-weight: 500; }
+
+main { display: grid; gap: 56px; padding-block: 36px 72px; }
+
+/* Ask */
+.ask-box {
+  display: flex; align-items: center; gap: 12px; padding: 6px 6px 6px 16px;
+  background: var(--bg-raise); border: 1px solid var(--line-2); border-radius: 12px;
+  transition: border-color .25s, box-shadow .25s;
+}
+.ask-box:focus-within { border-color: rgba(121, 226, 255, .55); box-shadow: 0 0 0 4px var(--accent-glow), 0 0 32px rgba(121, 226, 255, .10); }
+.prompt { font-family: var(--mono); color: var(--accent); flex: none; }
+.ask-box input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: var(--fg); font: inherit; font-size: 1.0625rem; padding-block: 10px; }
+.ask-box input::placeholder { color: var(--fg-3); }
+.ask-box button {
+  flex: none; border: 0; border-radius: 8px; padding: 10px 16px; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink); font: inherit; font-size: var(--fs-sm); font-weight: 600;
+  transition: box-shadow .2s, transform .1s;
+}
+.ask-box button:hover:not(:disabled) { box-shadow: 0 0 18px rgba(121, 226, 255, .35); }
+.ask-box button:active:not(:disabled) { transform: scale(.97); }
+
+.answer {
+  position: relative; margin-top: 18px; padding: 20px; border-radius: 12px;
+  background: linear-gradient(var(--bg-raise), var(--bg-raise)) padding-box,
+              linear-gradient(140deg, rgba(121, 226, 255, .45), var(--line) 40%, var(--line)) border-box;
+  border: 1px solid transparent;
+  animation: boot .6s cubic-bezier(.2,.8,.2,1) both;
+}
+.answer .q { display: flex; gap: 10px; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); margin: 0 0 12px; overflow-wrap: anywhere; }
+.answer .q span:first-child { color: var(--accent-dim); }
+.answer .body { margin: 0 0 16px; color: var(--fg); line-height: 1.7; max-width: 64ch; white-space: pre-wrap; overflow-wrap: anywhere; }
+.answer .body:last-child { margin-bottom: 0; }
+.answer .body.searching { color: var(--fg-2); }
+.answer .body.searching::before {
+  content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 10px; vertical-align: 2px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: pulse 1.4s ease-in-out infinite;
+}
+.answer .body.error { color: var(--danger); }
+@keyframes pulse { 50% { opacity: .35; box-shadow: 0 0 2px var(--accent); } }
+.ref { font-family: var(--mono); font-size: 0.7rem; color: var(--accent); vertical-align: 2px; padding: 0 2px; }
+a.ref:hover { text-shadow: 0 0 10px rgba(121, 226, 255, .6); }
+.sources { list-style: none; margin: 0; padding: 14px 0 0; border-top: 1px dashed var(--line-2); display: grid; gap: 10px; }
+.sources a, .sources .nolink { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; font-size: var(--fs-sm); }
+.sources a:hover .t { color: var(--accent); }
+.sources .t { transition: color .2s; min-width: 0; overflow-wrap: anywhere; }
+.sources .m { display: block; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); overflow-wrap: anywhere; }
+@keyframes boot {
+  from { opacity: 0; transform: translateY(8px); filter: blur(3px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+/* Section heads */
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.head h2 { margin: 0; font-size: var(--fs-xl); font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; }
+.head .range { font-family: var(--mono); font-size: var(--fs-sm); color: var(--accent); white-space: nowrap; }
+.sub { margin: 0; color: var(--fg-3); font-size: var(--fs-sm); }
+.empty { margin: 16px 0 0; padding: 18px 20px; border: 1px dashed var(--line-2); border-radius: 12px; color: var(--fg-2); font-size: var(--fs-sm); }
+.empty code { font-family: var(--mono); font-size: var(--fs-meta); color: var(--accent-dim); }
+.empty.error { color: var(--danger); border-color: rgba(255, 154, 154, .35); }
+.empty .linkish { margin-left: 8px; color: var(--accent); font-family: var(--mono); font-size: var(--fs-meta); }
+
+.group { margin-top: 32px; }
+.group h3 {
+  display: flex; align-items: center; gap: 12px; margin: 0 0 6px;
+  font-family: var(--mono); font-size: var(--fs-meta); font-weight: 500; letter-spacing: 0.06em; text-transform: lowercase; color: var(--fg-2);
+  white-space: nowrap;
+}
+.group h3::before { content: "//"; color: var(--accent-dim); }
+.group h3::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line-2), transparent); }
+.group h3 .by { order: 2; flex: 0 1 auto; min-width: 0; white-space: normal; text-align: right; letter-spacing: 0.02em; color: var(--fg-3); font-weight: 400; }
+.papers { list-style: none; margin: 0; padding: 0; }
+.paper {
+  position: relative; display: grid; grid-template-columns: 30px 1fr; gap: 2px 12px;
+  padding: 14px 12px 14px 10px; margin-inline: -10px; border-radius: 8px;
+  transition: background .25s;
+}
+.paper::before {
+  content: ""; position: absolute; left: 0; top: 16px; bottom: 16px; width: 2px; border-radius: 2px;
+  background: var(--accent); box-shadow: 0 0 8px var(--accent); opacity: 0; transform: scaleY(.4); transition: opacity .25s, transform .3s;
+}
+.paper:hover, .paper:focus-visible { background: var(--bg-hover); }
+.paper:hover::before, .paper:focus-visible::before { opacity: 1; transform: none; }
+.paper .n { grid-row: 1 / span 3; font-family: var(--mono); font-size: var(--fs-sm); color: var(--fg-3); padding-top: 1px; transition: color .25s; }
+.paper:hover .n { color: var(--accent); }
+.paper .t { font-weight: 500; line-height: 1.4; min-width: 0; overflow-wrap: anywhere; transition: color .25s, text-shadow .25s; }
+.paper:hover .t, .paper:focus-visible .t { color: #f2fcff; text-shadow: 0 0 18px rgba(121, 226, 255, .45); }
+.paper .w { color: var(--fg-2); font-size: var(--fs-sm); line-height: 1.55; min-width: 0; }
+.paper .id { font-family: var(--mono); font-size: var(--fs-meta); color: var(--accent-dim); margin-top: 4px; overflow-wrap: anywhere; }
+.paper .id span { color: var(--fg-3); }
+@media (min-width: 620px) {
+  .paper { grid-template-columns: 30px 1fr 110px; }
+  .paper .id { grid-column: 3; grid-row: 1; text-align: right; margin-top: 2px; }
+}
+
+/* Recently saved */
+.log { list-style: none; margin: 12px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.log li {
+  display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; align-items: center;
+  padding: 13px 0; border-bottom: 1px solid var(--line);
+}
+.log li.new { animation: boot .5s cubic-bezier(.2,.8,.2,1) both; }
+.log .t { min-width: 0; overflow-wrap: anywhere; transition: color .2s; }
+.log a.t:hover { color: var(--accent); }
+.log .src { grid-column: 1; min-width: 0; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); overflow-wrap: anywhere; }
+.log .src b { font-weight: 500; color: var(--accent-dim); }
+.log .src .pending { color: var(--accent); }
+.log .src .failed { color: var(--danger); }
+.log .note {
+  grid-column: 1; min-width: 0; color: var(--fg-2); font-size: var(--fs-sm); overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
+.log .when { grid-row: 1 / span 2; grid-column: 2; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); white-space: nowrap; }
+.log .actions { grid-column: 1 / -1; display: flex; gap: 16px; font-family: var(--mono); font-size: var(--fs-meta); }
+.log .actions button { background: none; border: 0; padding: 2px 0; cursor: pointer; color: var(--fg-3); transition: color .2s; }
+.log .actions button:hover:not(:disabled) { color: var(--accent); }
+.log .actions button.del:hover:not(:disabled) { color: var(--danger); }
+/* With a mouse, delete on ready items takes the place of the time on hover or focus, so rows don't shift */
+@media (hover: hover) {
+  .log li.ready { position: relative; }
+  .log li.ready .actions { position: absolute; right: 0; top: 50%; transform: translateY(-50%); padding-left: 12px; background: var(--bg); opacity: 0; transition: opacity .2s; }
+  .log li.ready .when { transition: opacity .2s; }
+  .log li.ready:hover .actions, .log li.ready:focus-within .actions { opacity: 1; }
+  .log li.ready:hover .when, .log li.ready:focus-within .when { opacity: 0; }
+}
+.more { margin-top: 14px; background: none; border: 0; padding: 4px 0; cursor: pointer; color: var(--accent); font-family: var(--mono); font-size: var(--fs-meta); }
+.more:hover { text-shadow: 0 0 10px rgba(121, 226, 255, .5); }
+
+/* Save */
+.save-btn {
+  display: inline-flex; align-items: center; gap: 10px; padding: 11px 18px; cursor: pointer;
+  background: transparent; color: var(--accent); font: inherit; font-size: var(--fs-sm); font-weight: 600;
+  border: 1px solid rgba(121, 226, 255, .4); border-radius: 10px; transition: background .2s, box-shadow .2s;
+}
+.save-btn:hover { background: rgba(121, 226, 255, .06); box-shadow: 0 0 20px var(--accent-glow); }
+.save-btn .plus { font-family: var(--mono); display: inline-block; transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+.save-btn[aria-expanded="true"] .plus { transform: rotate(45deg); }
+.save-panel { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .4s cubic-bezier(.2,.8,.2,1), opacity .3s; }
+.save-panel.open { grid-template-rows: 1fr; opacity: 1; }
+.save-panel > div { overflow: hidden; }
+.save-form { margin-top: 14px; padding: 16px; display: flex; flex-wrap: wrap; gap: 10px; background: var(--bg-raise); border: 1px solid var(--line-2); border-radius: 12px; }
+.save-form label { flex-basis: 100%; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); }
+.save-form input {
+  flex: 1 1 220px; min-width: 0; padding: 10px 12px; font-family: var(--mono); font-size: var(--fs-sm); color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line-2); border-radius: 8px; outline: 0; transition: border-color .2s, box-shadow .2s;
+}
+.save-form input:focus { border-color: rgba(121, 226, 255, .55); box-shadow: 0 0 0 3px var(--accent-glow); }
+.save-form input::placeholder { color: var(--fg-3); }
+.save-form button { padding: 10px 16px; border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer; }
+.save-form .msg { flex-basis: 100%; margin: 0; min-height: 0; font-size: var(--fs-sm); color: var(--danger); }
+.save-form .msg:empty { display: none; }
+
+footer { border-top: 1px solid var(--line); padding-block: 14px 36px; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); }
+
+@media (max-width: 400px) {
+  :root { --fs-xl: 1.625rem; }
+  .status span:nth-child(3) { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
 </style>
 </head>
 <body>
-<h1>Bookmarks <button id="logout-btn" type="button" style="float: right; font-size: 13px;">Log out</button></h1>
-<section id="digest">
-  <h2>This week</h2>
-  <div id="digest-body"></div>
-</section>
-<form id="save-form">
-  <input name="url" type="url" placeholder="Paste a link (http:// or https://)" required>
-  <input name="note" placeholder="Note (optional)">
-  <button id="save-btn">Save</button>
-</form>
-<div id="status" role="status"></div>
-<section id="ask">
-  <form id="ask-form">
-    <input name="question" placeholder="Ask about your library…" maxlength="500" required>
-    <button id="ask-btn">Ask</button>
-  </form>
-  <p id="ask-error" role="alert" hidden></p>
-  <p id="ask-answer" aria-live="polite" hidden></p>
-  <ul id="ask-items" hidden></ul>
-</section>
-<div id="list"></div>
+<div class="wrap">
+  <header class="topbar">
+    <a class="brand" href="/"><span class="mark" aria-hidden="true">PKC</span><span class="brand-name">Personal Knowledge Collection</span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="#recent-h" id="library-link">Library</a>
+      <button class="linkish" id="logout-btn" type="button">Log out</button>
+    </nav>
+  </header>
+  <div class="status" id="status-line" aria-label="Library status"></div>
+
+  <main>
+    <section aria-label="Ask">
+      <form id="ask-form">
+        <div class="ask-box">
+          <span class="prompt" aria-hidden="true">›</span>
+          <label for="ask-input" class="sr-only">Ask about your library</label>
+          <input id="ask-input" name="question" type="text" placeholder="Ask about your library…" maxlength="500" autocomplete="off" required>
+          <button id="ask-btn" type="submit">Ask</button>
+        </div>
+      </form>
+      <article class="answer" id="answer" aria-live="polite" hidden></article>
+    </section>
+
+    <section>
+      <button class="save-btn" id="save-toggle" type="button" aria-expanded="false" aria-controls="save-panel"><span class="plus" aria-hidden="true">+</span> Save a link</button>
+      <div class="save-panel" id="save-panel">
+        <div>
+          <form class="save-form" id="save-form">
+            <label for="save-url">url</label>
+            <input id="save-url" name="url" type="url" placeholder="https://arxiv.org/abs/…" required tabindex="-1">
+            <input id="save-note" name="note" type="text" placeholder="note (optional)" tabindex="-1" aria-label="Note (optional)">
+            <button id="save-btn" type="submit" tabindex="-1">Save</button>
+            <p class="msg" id="save-msg" role="alert"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="recent-h">
+      <div class="head"><h2 id="recent-h">Recently saved</h2></div>
+      <div id="recent"></div>
+    </section>
+
+    <section aria-labelledby="week-h">
+      <div class="head">
+        <h2 id="week-h">This week</h2>
+        <span class="range" id="week-range"></span>
+      </div>
+      <div id="digest"></div>
+    </section>
+  </main>
+
+  <footer>personal knowledge collection</footer>
+</div>
 
 <script>
 // All server data is written with textContent / setAttribute, never innerHTML,
-// so a saved URL or note can't be interpreted as markup.
-const listEl = document.getElementById("list");
-const statusEl = document.getElementById("status");
-const form = document.getElementById("save-form");
-const saveBtn = document.getElementById("save-btn");
-
-const showError = msg => { statusEl.textContent = msg; };
-const clearError = () => { statusEl.textContent = ""; };
+// so a saved URL, title, note or answer can't be interpreted as markup.
 
 // Only allow http(s) links in href, even if something else ended up in the DB
 const safeHref = u => {
@@ -101,10 +338,6 @@ async function api(path, opts = {}) {
   return data;
 }
 
-document.getElementById("logout-btn").addEventListener("click", async () => {
-  try { await fetch("/logout", { method: "POST" }); } finally { location.href = "/login"; }
-});
-
 function el(tag, props = {}, ...children) {
   const n = document.createElement(tag);
   Object.assign(n, props);
@@ -112,156 +345,324 @@ function el(tag, props = {}, ...children) {
   return n;
 }
 
-function render(rows) {
-  if (!rows.length) {
-    listEl.replaceChildren(el("p", { textContent: "No bookmarks yet." }));
-    return;
-  }
-  listEl.replaceChildren(...rows.map(b => {
-    const href = safeHref(b.url);
-    const link = href
-      ? el("a", { href, target: "_blank", rel: "noopener noreferrer", textContent: b.url })
-      : el("span", { textContent: String(b.url ?? "") });
-    const info = el("div", {}, link);
-    if (b.note) info.append(el("div", { className: "note", textContent: b.note }));
-    info.append(el("div", { className: "note", textContent: String(b.created_at ?? "") }));
-    const del = el("button", { textContent: "Delete", type: "button" });
-    del.dataset.id = String(b.id);
-    return el("div", { className: "card" }, info, del);
-  }));
+// A link when the URL is http(s), otherwise plain text
+function linkOrText(url, props, ...children) {
+  const href = safeHref(url);
+  return href
+    ? el("a", { ...props, href, target: "_blank", rel: "noopener noreferrer" }, ...children)
+    : el("span", props, ...children);
 }
 
-async function load() {
-  try {
-    const rows = await api("/api/bookmarks");
-    if (!Array.isArray(rows)) throw new Error("Unexpected response from server");
-    render(rows);
-  } catch (err) {
-    showError(err.message);
-  }
+const PLATFORM_LABELS = { x: "X", substack: "Substack", arxiv: "arXiv", instagram: "Instagram", facebook: "Facebook", web: "web" };
+const platformLabel = p => PLATFORM_LABELS[p] || String(p || "web");
+
+// Timestamps from the server are UTC "YYYY-MM-DD HH:MM:SS"
+const parseUtc = s => {
+  const d = new Date(String(s ?? "").replace(" ", "T") + (/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? "" : "Z"));
+  return isNaN(d) ? null : d;
+};
+const MONTH = new Intl.DateTimeFormat("en-US", { month: "short" });
+const shortDate = d => `${MONTH.format(d)} ${d.getDate()}`;
+function timeAgo(s) {
+  const d = parseUtc(s);
+  if (!d) return String(s ?? "");
+  const min = Math.round((Date.now() - d) / 60000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min} min ago`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `${h} h ago`;
+  const days = Math.round(h / 24);
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days} days ago`;
+  return shortDate(d);
 }
 
-form.addEventListener("submit", async e => {
-  e.preventDefault();
-  clearError();
-  const url = form.url.value.trim();
-  const note = form.note.value.trim();
-  const body = { url };
-  if (note) body.note = note;
+const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; } };
 
-  saveBtn.disabled = true;
-  try {
-    await api("/api/bookmarks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    form.reset();
-    await load();
-  } catch (err) {
-    showError(err.message);
-  } finally {
-    saveBtn.disabled = false;
-  }
+document.getElementById("logout-btn").addEventListener("click", async () => {
+  try { await fetch("/logout", { method: "POST" }); } finally { location.href = "/login"; }
 });
 
-listEl.addEventListener("click", async e => {
-  const btn = e.target.closest("button[data-id]");
-  if (!btn) return;
-  const id = Number(btn.dataset.id);
-  if (!Number.isInteger(id)) return;
-  clearError();
-  btn.disabled = true;
-  try {
-    await api(`/api/bookmarks/${id}`, { method: "DELETE" });
-    await load();
-  } catch (err) {
-    showError(err.message);
-    btn.disabled = false;
+// --- status line -------------------------------------------------------------
+
+const statusLine = document.getElementById("status-line");
+let statusRows = null, statusDigestAt = null;
+
+function renderStatus() {
+  const parts = [];
+  if (statusRows) {
+    const weekAgo = Date.now() - 7 * 864e5;
+    const fresh = statusRows.filter(b => (parseUtc(b.created_at) || 0) >= weekAgo).length;
+    parts.push(["items", statusRows.length], ["new this week", fresh]);
   }
-});
+  if (statusDigestAt) parts.push(["digest", shortDate(statusDigestAt)]);
+  statusLine.replaceChildren(...parts.map(([k, v]) => el("span", {}, `${k} `, el("b", { textContent: String(v) }))));
+}
+
+// --- Ask ---------------------------------------------------------------------
 
 const askForm = document.getElementById("ask-form");
+const askInput = document.getElementById("ask-input");
 const askBtn = document.getElementById("ask-btn");
-const askAnswer = document.getElementById("ask-answer");
-const askItems = document.getElementById("ask-items");
-const askError = document.getElementById("ask-error");
+const answerEl = document.getElementById("answer");
+
+function showAnswer(question, ...content) {
+  answerEl.replaceChildren(
+    el("p", { className: "q" }, el("span", { textContent: "q" }), el("span", { textContent: question })),
+    ...content,
+  );
+  answerEl.hidden = false;
+  answerEl.style.animation = "none"; answerEl.offsetHeight; answerEl.style.animation = "";
+}
+
+// Turn "[12]" in the answer into a link to item 12 when the answer cited it, render
+// **bold** and "- " list markers from the model's Markdown; everything else stays text.
+function answerBody(text, byId) {
+  const body = el("p", { className: "body" });
+  const md = text.replace(/^(\s*)[-*] /gm, "$1• ");
+  for (const part of md.split(/(\*\*[^*\n]+\*\*|\[\d+\])/)) {
+    const id = /^\[(\d+)\]$/.exec(part)?.[1];
+    const item = id && byId.get(Number(id));
+    if (item) body.append(linkOrText(item.url, { className: "ref", textContent: part, title: String(item.title || item.url || "") }));
+    else if (/^\*\*.+\*\*$/.test(part)) body.append(el("strong", {}, ...answerBody(part.slice(2, -2), byId).childNodes));
+    else body.append(part);
+  }
+  return body;
+}
 
 askForm.addEventListener("submit", async e => {
   e.preventDefault();
-  const question = askForm.question.value.trim();
+  const question = askInput.value.trim();
   if (!question) return;
-  askError.hidden = askAnswer.hidden = askItems.hidden = true;
   askBtn.disabled = true;
-  askBtn.textContent = "Thinking…";
+  showAnswer(question, el("p", { className: "body searching", textContent: "Searching your library…" }));
   try {
     const data = await api("/api/ask", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question }),
     });
-    askAnswer.textContent = String(data?.answer ?? "");
-    askAnswer.hidden = false;
     const items = Array.isArray(data?.items) ? data.items : [];
-    askItems.replaceChildren(...items.map(it => {
-      const label = `[${it.id}] ${it.title || it.url}`;
-      const href = safeHref(it.url);
-      return el("li", {}, href
-        ? el("a", { href, target: "_blank", rel: "noopener noreferrer", textContent: label })
-        : el("span", { textContent: label }));
-    }));
-    askItems.hidden = items.length === 0;
+    const byId = new Map(items.map(it => [Number(it.id), it]));
+    const content = [answerBody(String(data?.answer ?? ""), byId)];
+    if (items.length) {
+      content.push(el("ol", { className: "sources" }, ...items.map(it => {
+        const meta = [platformLabel(it.platform), hostOf(it.url)].filter(Boolean).join(" · ");
+        return el("li", {}, linkOrText(it.url, { className: safeHref(it.url) ? "" : "nolink" },
+          el("span", { className: "ref", textContent: `[${it.id}]` }),
+          el("span", {}, el("span", { className: "t", textContent: String(it.title || it.url || "") }),
+                         el("span", { className: "m", textContent: meta }))));
+      })));
+    }
+    showAnswer(question, ...content);
   } catch (err) {
-    askError.textContent = err.message;
-    askError.hidden = false;
+    showAnswer(question, el("p", { className: "body error", textContent: `Couldn't answer that: ${err.message}` }));
   } finally {
     askBtn.disabled = false;
-    askBtn.textContent = "Ask";
   }
 });
 
-const digestBody = document.getElementById("digest-body");
+// --- Save a link ---------------------------------------------------------------
 
-const RANKED_BY = {
-  ai: "Ranked by Claude",
-  prescore: "Ranked by pre-score",
-  prescore_fallback: "Ranked by pre-score (AI ranking failed)",
-};
+const saveToggle = document.getElementById("save-toggle");
+const savePanel = document.getElementById("save-panel");
+const saveForm = document.getElementById("save-form");
+const saveBtn = document.getElementById("save-btn");
+const saveMsg = document.getElementById("save-msg");
+const saveFields = savePanel.querySelectorAll("input, button");
+
+function setSaveOpen(open) {
+  saveToggle.setAttribute("aria-expanded", open);
+  savePanel.classList.toggle("open", open);
+  saveFields.forEach(f => f.tabIndex = open ? 0 : -1);
+  if (open) setTimeout(() => document.getElementById("save-url").focus(), 250);
+}
+saveToggle.addEventListener("click", () => setSaveOpen(saveToggle.getAttribute("aria-expanded") !== "true"));
+
+saveForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  saveMsg.textContent = "";
+  const body = { url: saveForm.url.value.trim() };
+  const note = saveForm.note.value.trim();
+  if (note) body.note = note;
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving…";
+  try {
+    await api("/api/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    saveForm.reset();
+    setSaveOpen(false);
+    await loadRecent();
+  } catch (err) {
+    saveMsg.textContent = `Couldn't save: ${err.message}`;
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save";
+  }
+});
+
+// --- Recently saved ------------------------------------------------------------
+
+const RECENT_LIMIT = 5;
+const recentEl = document.getElementById("recent");
+let recentRows = [], showAll = false, seenIds = null, pollTimer = null, polls = 0;
+
+function emptyNote(text, retry) {
+  const p = el("p", { className: retry ? "empty error" : "empty", textContent: text });
+  if (retry) p.append(el("button", { className: "linkish", type: "button", textContent: "try again", onclick: retry }));
+  return p;
+}
+
+function recentRow(b) {
+  const status = b.status || "ready";
+  const title = String(b.title || b.url || "");
+  const src = el("span", { className: "src" }, "src ", el("b", { textContent: platformLabel(b.platform) }));
+  if (status === "pending") src.append(" · ", el("span", { className: "pending", textContent: "extracting…" }));
+  if (status === "failed") src.append(" · ", el("span", { className: "failed", textContent: `failed${b.error ? `: ${b.error}` : ""}` }));
+
+  const actions = el("div", { className: "actions" });
+  if (status === "failed") actions.append(el("button", { type: "button", className: "retry", textContent: "retry" }));
+  actions.append(el("button", { type: "button", className: "del", textContent: "delete", ariaLabel: `Delete ${title}` }));
+  actions.querySelectorAll("button").forEach(btn => btn.dataset.id = String(b.id));
+
+  const li = el("li", { className: status },
+    linkOrText(b.url, { className: "t", textContent: title }),
+    src,
+    el("span", { className: "when", textContent: timeAgo(b.created_at) }));
+  if (b.note) li.append(el("span", { className: "note", textContent: b.note }));
+  li.append(actions);
+  if (seenIds && !seenIds.has(b.id)) li.classList.add("new");
+  return li;
+}
+
+function renderRecent() {
+  if (!recentRows.length) {
+    recentEl.replaceChildren(emptyNote("Nothing saved yet. Use “+ Save a link” above to add your first one."));
+    return;
+  }
+  const shown = showAll ? recentRows : recentRows.slice(0, RECENT_LIMIT);
+  const nodes = [el("ul", { className: "log" }, ...shown.map(recentRow))];
+  if (recentRows.length > RECENT_LIMIT) {
+    nodes.push(el("button", {
+      className: "more", type: "button",
+      textContent: showAll ? "show fewer" : `show all ${recentRows.length} →`,
+      onclick: () => { showAll = !showAll; renderRecent(); },
+    }));
+  }
+  recentEl.replaceChildren(...nodes);
+  seenIds = new Set(recentRows.map(b => b.id));
+}
+
+async function loadRecent() {
+  clearTimeout(pollTimer);
+  try {
+    const rows = await api("/api/bookmarks");
+    if (!Array.isArray(rows)) throw new Error("Unexpected response from server");
+    recentRows = rows;
+  } catch (err) {
+    recentEl.replaceChildren(emptyNote(`Couldn't load your saved items: ${err.message}`, loadRecent));
+    return;
+  }
+  renderRecent();
+  statusRows = recentRows;
+  renderStatus();
+  // Extraction runs after the save returns; refresh until pending items settle.
+  if (recentRows.some(b => b.status === "pending") && polls < 20) {
+    polls++;
+    pollTimer = setTimeout(loadRecent, 3000);
+  } else {
+    polls = 0;
+  }
+}
+
+recentEl.addEventListener("click", async e => {
+  const btn = e.target.closest("button[data-id]");
+  if (!btn) return;
+  const id = Number(btn.dataset.id);
+  if (!Number.isInteger(id)) return;
+  btn.disabled = true;
+  const retry = btn.classList.contains("retry");
+  try {
+    await api(retry ? `/api/bookmarks/${id}/retry` : `/api/bookmarks/${id}`, { method: retry ? "POST" : "DELETE" });
+    await loadRecent();
+  } catch (err) {
+    btn.disabled = false;
+    btn.closest("li").querySelector(".src").append(" · ",
+      el("span", { className: "failed", textContent: `couldn't ${retry ? "retry" : "delete"}: ${err.message}` }));
+  }
+});
+
+document.getElementById("library-link").addEventListener("click", () => {
+  if (!showAll && recentRows.length > RECENT_LIMIT) { showAll = true; renderRecent(); }
+});
+
+// --- This week -----------------------------------------------------------------
+
+const digestEl = document.getElementById("digest");
+const weekRange = document.getElementById("week-range");
+
+const WATCHLIST_NAMES = { interpretability: "Interpretability", alignment: "Alignment", "robustness-evals": "Robustness & evals" };
+const watchlistName = w => WATCHLIST_NAMES[w] || String(w ?? "").replace(/[-_]/g, " ");
+const RANKED_BY = { ai: "ranked by claude", prescore: "ranked by pre-score", prescore_fallback: "pre-score (ai ranking failed)" };
+
+// The digest covers papers from the week up to the day it ran
+function rangeLabel(end) {
+  const start = new Date(end - 6 * 864e5);
+  return start.getMonth() === end.getMonth()
+    ? `${MONTH.format(start)} ${start.getDate()}–${end.getDate()}`
+    : `${shortDate(start)}–${shortDate(end)}`;
+}
+
+function paperId(url) {
+  const m = /arxiv\.org\/(?:abs|pdf)\/([^?#\s]+?)(?:v\d+)?(?:\.pdf)?$/.exec(String(url ?? ""));
+  return m ? el("span", { className: "id" }, el("span", { textContent: "arXiv:" }), m[1])
+           : el("span", { className: "id", textContent: hostOf(url) });
+}
 
 async function loadDigest() {
   let digests;
   try {
     digests = (await api("/api/digests/latest"))?.digests;
   } catch (err) {
-    // The digest is optional; keep the rest of the page working.
-    digestBody.replaceChildren(el("p", { className: "note", textContent: `Couldn't load the digest: ${err.message}` }));
+    digestEl.replaceChildren(emptyNote(`Couldn't load this week's papers: ${err.message}`, loadDigest));
     return;
   }
   if (!Array.isArray(digests) || !digests.length) {
-    digestBody.replaceChildren(el("p", { className: "note",
-      textContent: "No digest yet. Run python -m app.jobs.weekly_digest." }));
+    weekRange.textContent = "";
+    const p = emptyNote("No papers yet. The digest is built once a week; to build one now, run ");
+    p.append(el("code", { textContent: "python -m app.jobs.weekly_digest" }), ".");
+    digestEl.replaceChildren(p);
     return;
   }
-  digestBody.replaceChildren(...digests.map(d => {
-    const heading = el("h3", { textContent: `${d.watchlist} · ${String(d.run_at ?? "").slice(0, 10)}` });
-    const label = RANKED_BY[d.ranked_by];
-    if (label) heading.append(el("span", { className: "ranked-by", textContent: label }));
-    const list = el("ol", {}, ...(d.items || []).map(it => {
-      const href = safeHref(it.url);
-      const title = String(it.title || it.url || "");
-      const link = href
-        ? el("a", { href, target: "_blank", rel: "noopener noreferrer", textContent: title })
-        : el("span", { textContent: title });
-      const li = el("li", {}, el("span", { className: "rank", textContent: `${it.rank}.` }), link);
-      if (it.why) li.append(el("div", { className: "note", textContent: it.why }));
-      return li;
-    }));
-    return el("div", {}, heading, list);
-  }));
+  const latest = digests.map(d => parseUtc(d.run_at)).filter(Boolean).sort((a, b) => b - a)[0];
+  weekRange.textContent = latest ? rangeLabel(latest) : "";
+  statusDigestAt = latest || null;
+  renderStatus();
+
+  const total = digests.reduce((n, d) => n + (d.items || []).length, 0);
+  digestEl.replaceChildren(
+    el("p", { className: "sub", textContent: `${total} new AI safety papers across ${digests.length} watchlists, ranked against what you save.` }),
+    ...digests.map(d => {
+      const heading = el("h3", { textContent: watchlistName(d.watchlist) });
+      if (RANKED_BY[d.ranked_by]) heading.append(el("span", { className: "by", textContent: RANKED_BY[d.ranked_by] }));
+      const items = d.items || [];
+      const list = items.length
+        ? el("ol", { className: "papers" }, ...items.map(it => el("li", {}, linkOrText(it.url, { className: "paper" },
+            el("span", { className: "n", textContent: String(it.rank ?? "").padStart(2, "0") }),
+            el("span", { className: "t", textContent: String(it.title || it.url || "") }),
+            el("span", { className: "w", textContent: String(it.why ?? "") }),
+            paperId(it.url)))))
+        : el("p", { className: "sub", textContent: "Nothing new matched this watchlist." });
+      return el("div", { className: "group" }, heading, list);
+    }),
+  );
 }
 
+loadRecent();
 loadDigest();
-load();
 </script>
 </body>
 </html>
