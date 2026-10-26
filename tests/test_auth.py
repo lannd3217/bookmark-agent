@@ -47,6 +47,8 @@ def login_on(tmp_path, monkeypatch):
     ("DELETE", "/api/bookmarks/1"),
     ("POST", "/api/bookmarks/1/retry"),
     ("PATCH", "/api/bookmarks/1"),
+    ("GET", "/api/bookmarks/1"),
+    ("POST", "/api/bookmarks/1/summarize"),
     ("GET", "/api/categories"),
     ("POST", "/api/categories"),
     ("PATCH", "/api/categories/1"),

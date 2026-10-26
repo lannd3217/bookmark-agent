@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field, StringConstraints
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 import anthropic
-from . import agent, auth, db, shelves
+from . import agent, auth, db, shelves, summaries
 from .claude_log import instrument
 from .extract import fetch_page
 from .importers.facebook import parse_facebook_saves
@@ -70,6 +70,9 @@ class CategoryPatch(BaseModel):
 
 class BookmarkPatch(BaseModel):
     category_id: int
+
+class SummarizeIn(BaseModel):
+    regenerate: bool = False
 
 PUBLIC_PATHS = {"/login", "/health"}
 CRON_PREFIX = "/api/cron/"
@@ -215,6 +218,27 @@ def list_bookmarks(q: str | None = None, platform: str | None = None, category_i
     if not (q or platform or category_id is not None or kind or sort):
         return db.list_all()    # newest saved first, for the home page
     return db.list_bookmarks(q=q, platform=platform, category_id=category_id, kind=kind, sort=sort or "newest")
+
+@app.get("/api/bookmarks/{bid}")
+def get_bookmark(bid: int):
+    """One bookmark, including its AI summary (lists only say has_summary)."""
+    row = db.get(bid)
+    if not row:
+        raise HTTPException(status_code=404, detail="Bookmark not found")
+    return row
+
+@app.post("/api/bookmarks/{bid}/summarize")
+def summarize_bookmark(bid: int, inp: SummarizeIn | None = None):
+    """The saved summary, or a new one (also when {"regenerate": true})."""
+    try:
+        row = summaries.summarize_item(bid, regenerate=bool(inp and inp.regenerate))
+    except summaries.RateLimited as exc:
+        raise HTTPException(status_code=429, detail=str(exc), headers={"Retry-After": str(exc.retry_after)})
+    except summaries.SummaryError as exc:
+        raise HTTPException(status_code=exc.status, detail=str(exc))
+    if row is None:
+        raise HTTPException(status_code=404, detail="Bookmark not found")
+    return row
 
 @app.patch("/api/bookmarks/{bid}")
 def update_bookmark(bid: int, inp: BookmarkPatch):

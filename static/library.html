@@ -460,6 +460,74 @@ footer { border-top: 1px solid var(--line); padding-block: 14px 36px; font-famil
 button:disabled { opacity: .55; cursor: default; }
 .m-error { margin: 0; color: var(--danger); font-size: var(--fs-sm); }
 .m-error:empty { display: none; }
+
+/* AI summary (TL;DR): read like an edited note, not a data dump */
+.tldr-btn {
+  justify-self: start; display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; cursor: pointer;
+  background: rgba(121, 226, 255, .06); color: var(--accent); font-size: var(--fs-sm); font-weight: 600;
+  border: 1px solid rgba(121, 226, 255, .4); border-radius: 999px; transition: background .2s, box-shadow .2s;
+}
+.tldr-btn:hover { background: rgba(121, 226, 255, .1); box-shadow: 0 0 20px var(--accent-glow); }
+.tldr-btn .spark { display: inline-block; transition: transform .5s cubic-bezier(.2,.8,.2,1); }
+.tldr-btn:hover .spark { transform: rotate(72deg) scale(1.1); }
+.tldr-badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 0 6px; border-radius: 4px; line-height: 1.6;
+  font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.04em;
+  color: var(--accent); background: rgba(121, 226, 255, .1); text-shadow: 0 0 8px rgba(121, 226, 255, .35);
+}
+.tldr {
+  display: grid; gap: 26px; padding: 22px 22px 18px; border-radius: 14px;
+  background: linear-gradient(var(--bg), var(--bg)) padding-box,
+              linear-gradient(150deg, rgba(121, 226, 255, .5), var(--line-2) 35%, var(--line) 100%) border-box;
+  border: 1px solid transparent;
+  animation: boot .55s cubic-bezier(.2,.8,.2,1) both;
+}
+.tldr-label { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-family: var(--mono); font-size: var(--fs-meta); color: var(--accent); letter-spacing: 0.06em; }
+.tldr-lead { margin: 0; font-size: 1.1875rem; line-height: 1.6; font-weight: 500; letter-spacing: -0.005em; color: #eef3f7; text-wrap: pretty; }
+.tldr h4 { margin: 0 0 8px; font-family: var(--mono); font-size: var(--fs-meta); font-weight: 500; letter-spacing: 0.06em; text-transform: lowercase; color: var(--fg-2); }
+.tldr h4::before { content: "// "; color: var(--accent-dim); }
+.tldr .prose { margin: 0; font-size: 1rem; line-height: 1.75; color: var(--fg); max-width: 62ch; }
+.tldr ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.tldr .points li { position: relative; padding-left: 20px; font-size: 1rem; line-height: 1.7; color: var(--fg); }
+.tldr .points li::before {
+  content: ""; position: absolute; left: 3px; top: .72em; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent-dim); box-shadow: 0 0 6px rgba(121, 226, 255, .4);
+}
+.tldr .caveats li { position: relative; padding-left: 20px; font-size: var(--fs-sm); line-height: 1.7; color: var(--fg-2); }
+.tldr .caveats li::before { content: "–"; position: absolute; left: 3px; color: var(--fg-3); }
+.terms summary {
+  display: inline-flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; padding: 2px 0;
+  font-family: var(--mono); font-size: var(--fs-meta); letter-spacing: 0.06em; color: var(--fg-2); transition: color .2s;
+}
+.terms summary::-webkit-details-marker { display: none; }
+.terms summary::before { content: "// "; color: var(--accent-dim); margin-right: -6px; }
+.terms summary:hover { color: var(--accent); }
+.terms summary .chev { display: inline-block; color: var(--accent-dim); transition: transform .25s; }
+.terms[open] summary .chev { transform: rotate(90deg); }
+.terms dl { margin: 12px 0 0; display: grid; gap: 14px; animation: boot .35s cubic-bezier(.2,.8,.2,1) both; }
+.terms dt { font-weight: 600; font-size: var(--fs-sm); color: var(--fg); }
+.terms dd { margin: 2px 0 0; font-size: var(--fs-sm); line-height: 1.7; color: var(--fg-2); }
+.tldr-foot {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding-top: 14px; border-top: 1px solid var(--line);
+  font-family: var(--mono); font-size: 0.6875rem; color: var(--fg-3);
+}
+.tldr-foot .regen { margin-left: auto; }
+.tldr-loading { display: grid; gap: 12px; padding: 20px 22px; border-radius: 14px; border: 1px dashed var(--line-2); background: var(--bg); }
+.tldr-loading p { margin: 0 0 4px; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-2); }
+.tldr-loading p::before {
+  content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 10px; vertical-align: 1px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: pulse 1.2s ease-in-out infinite;
+}
+.skel { height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--line) 0%, var(--line-2) 40%, var(--line) 80%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+.skel.w1 { width: 92%; } .skel.w2 { width: 78%; } .skel.w3 { width: 58%; }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.tldr-thin { margin: 0; padding: 16px 18px; border-radius: 12px; border: 1px dashed var(--line-2); color: var(--fg-2); font-size: var(--fs-sm); line-height: 1.7; animation: boot .4s cubic-bezier(.2,.8,.2,1) both; }
+.tldr-thin .linkish { margin-left: 4px; }
+@media (max-width: 480px) {
+  .tldr { padding: 18px 16px 16px; gap: 24px; }
+  .tldr-lead { font-size: 1.0625rem; line-height: 1.6; }
+}.tldr-error { margin: 0; padding: 16px 18px; border-radius: 12px; border: 1px dashed rgba(255, 154, 154, .4); color: var(--danger); font-size: var(--fs-sm); line-height: 1.7; animation: boot .4s cubic-bezier(.2,.8,.2,1) both; }
+.tldr-error .linkish { margin-left: 8px; }
 </style>
 </head>
 <body>
@@ -537,6 +605,7 @@ button:disabled { opacity: .55; cursor: default; }
       <h2 id="d-title"></h2>
       <div class="d-meta" id="d-meta"></div>
     </div>
+    <div id="d-tldr" aria-live="polite"></div>
     <p class="d-status" id="d-status" hidden></p>
     <div id="d-open-wrap">
       <a class="open-orig" id="d-open" href="#" target="_blank" rel="noopener noreferrer">Open original <span aria-hidden="true">↗</span></a>
@@ -613,7 +682,9 @@ async function api(path, opts = {}) {
     const msg = typeof d === "string" ? d
       : Array.isArray(d) ? d.map(x => x.msg).join("; ")
       : `Request failed (${r.status})`;
-    throw new Error(msg);
+    const err = new Error(msg);
+    err.status = r.status;
+    throw err;
   }
   return data;
 }
@@ -705,7 +776,8 @@ async function refresh({ animate = false } = {}) {
   if (await loadItems()) renderList(animate);
   if (openItem) {
     const fresh = items.find(i => i.id === openItem.id);
-    if (fresh) openItem = fresh;
+    // List rows don't carry the summary itself; keep the one already loaded.
+    if (fresh) openItem = { ...fresh, summary: fresh.has_summary ? openItem.summary ?? null : null };
     renderShelfSelect();
   }
   if (openSheet === $("manage")) renderManage();
@@ -763,6 +835,7 @@ function itemRow(it) {
   const meta = el("span", { className: "meta" },
     el("span", { className: `badge ${it.kind}`, textContent: it.kind }),
     el("span", {}, "src ", el("b", { textContent: platformLabel(it.platform) })));
+  if (it.has_summary) meta.append(el("span", { className: "tldr-badge", title: "Has an AI summary" }, el("span", { ariaHidden: "true", textContent: "✦" }), "TL;DR"));
   if (it.status === "pending") meta.append(el("span", { className: "pending", textContent: "extracting…" }));
   if (it.status === "failed") meta.append(el("span", { className: "failed", textContent: "extraction failed" }));
   if (state.shelf === "all") {
@@ -984,6 +1057,8 @@ function openDetail(it, trigger) {
     el("span", { className: `badge ${it.kind}`, textContent: it.kind }),
     el("span", {}, "src ", el("b", { textContent: platformLabel(it.platform) })),
     el("span", { textContent: `saved ${longDate(it.created_at)}` }));
+  renderTldr();
+  if (it.has_summary && it.summary === undefined) loadSummary(it.id);
 
   const status = $("d-status");
   status.hidden = it.status === "ready" || !it.status;
@@ -1011,6 +1086,113 @@ function openDetail(it, trigger) {
   renderFoot();
   document.querySelectorAll(".item").forEach(b => b.setAttribute("aria-expanded", String(Number(b.dataset.id) === it.id)));
   if (openSheet !== detail) showSheet(detail, trigger, $("d-close"));
+}
+
+// --- AI summary (TL;DR) -------------------------------------------------------
+
+const SOURCE_LABEL = {
+  "full paper": "Based on the full paper",
+  "paper abstract only": "Based on the abstract only",
+  "web article": "Based on the page text",
+  "social post": "Based on the post text",
+};
+// Per item while not simply showing its summary: { status: "loading" | "thin" | "error", label, message }
+const tldrState = new Map();
+
+// Keep the list's copy of an item in step with what the server just returned.
+function storeItem(row) {
+  const i = items.findIndex(x => x.id === row.id);
+  if (i >= 0) items[i] = { ...items[i], ...row };
+  if (openItem?.id === row.id) openItem = { ...openItem, ...row };
+}
+
+function renderTldr() {
+  const it = openItem;
+  if (!it) return;
+  const slot = $("d-tldr");
+  const st = tldrState.get(it.id);
+  if (st?.status === "loading") {
+    slot.replaceChildren(el("div", { className: "tldr-loading", role: "status" },
+      el("p", { textContent: st.label }),
+      el("div", { className: "skel w1" }), el("div", { className: "skel w2" }), el("div", { className: "skel w3" })));
+    return;
+  }
+  if (st?.status === "thin") {
+    const p = el("p", { className: "tldr-thin", textContent: st.message });
+    const href = safeHref(it.url);
+    if (href) p.append(el("a", { className: "linkish", href, target: "_blank", rel: "noopener noreferrer", textContent: "open ↗" }));
+    slot.replaceChildren(p);
+    return;
+  }
+  if (st?.status === "error") {
+    slot.replaceChildren(el("p", { className: "tldr-error", role: "alert" }, st.message,
+      el("button", { className: "linkish", type: "button", textContent: "try again", onclick: st.retry })));
+    return;
+  }
+  if (it.summary) { slot.replaceChildren(tldrCard(it)); return; }
+  slot.replaceChildren(el("button", { className: "tldr-btn", type: "button", onclick: () => generateTldr(it.id) },
+    el("span", { className: "spark", ariaHidden: "true", textContent: "✦" }), "TL;DR"));
+}
+
+// Every field is model output: set with textContent only.
+function tldrCard(it) {
+  const s = it.summary;
+  const list = x => (Array.isArray(x) ? x : []).map(v => String(v ?? "")).filter(Boolean);
+  const terms = (Array.isArray(s.terms) ? s.terms : []).filter(t => t && t.term);
+  const points = list(s.key_points), caveats = list(s.caveats);
+  const section = (title, ...body) => el("section", {}, el("h4", { textContent: title }), ...body);
+  const card = el("article", { className: "tldr", ariaLabel: "AI summary" },
+    el("div", {},
+      el("p", { className: "tldr-label" }, el("span", { ariaHidden: "true", textContent: "✦" }), "TL;DR"),
+      el("p", { className: "tldr-lead", textContent: String(s.tldr ?? "") })));
+  if (s.why_it_matters) card.append(section("Why it matters", el("p", { className: "prose", textContent: String(s.why_it_matters) })));
+  if (points.length) card.append(section("Key points", el("ul", { className: "points" }, ...points.map(p => el("li", { textContent: p })))));
+  if (terms.length) {
+    card.append(el("details", { className: "terms" },
+      el("summary", {}, `Terms explained (${terms.length})`, el("span", { className: "chev", ariaHidden: "true", textContent: "›" })),
+      el("dl", {}, ...terms.flatMap(t => [el("dt", { textContent: String(t.term) }), el("dd", { textContent: String(t.meaning ?? "") })]))));
+  }
+  if (caveats.length) card.append(section("Caveats", el("ul", { className: "caveats" }, ...caveats.map(c => el("li", { textContent: c })))));
+  const foot = el("footer", { className: "tldr-foot" }, el("span", { textContent: SOURCE_LABEL[it.summary_source] || "AI summary" }));
+  if (it.summarized_at) foot.append(el("span", { textContent: `Generated ${longDate(it.summarized_at)}` }));
+  foot.append(el("button", { className: "linkish regen", type: "button", textContent: "Regenerate", onclick: () => generateTldr(it.id, true) }));
+  card.append(foot);
+  return card;
+}
+
+async function loadSummary(id) {
+  tldrState.set(id, { status: "loading", label: "Loading summary…" });
+  renderTldr();
+  try {
+    storeItem(await api(`/api/bookmarks/${id}`));
+    tldrState.delete(id);
+  } catch (err) {
+    tldrState.set(id, { status: "error", message: `Couldn't load the summary: ${err.message}`, retry: () => loadSummary(id) });
+  }
+  if (openItem?.id === id) renderTldr();
+}
+
+async function generateTldr(id, regenerate = false) {
+  const it = items.find(x => x.id === id) || openItem;
+  const had = Boolean(it?.summary);
+  tldrState.set(id, { status: "loading", label: it?.kind === "paper" ? "Reading the full paper…" : "Reading…" });
+  renderTldr();
+  try {
+    const row = await send("POST", `/api/bookmarks/${id}/summarize`, regenerate ? { regenerate: true } : {});
+    tldrState.delete(id);
+    storeItem(row);
+    renderList();
+  } catch (err) {
+    if (regenerate && had) {
+      tldrState.delete(id);
+      toast(`Couldn't regenerate: ${err.message}`, { error: true });
+    } else if (err.status === 422) {
+      tldrState.set(id, { status: "thin", message: err.message });
+    } else {
+      tldrState.set(id, { status: "error", message: err.message, retry: () => generateTldr(id, regenerate) });
+    }
+  }
+  if (openItem?.id === id) renderTldr();
 }
 
 function closeDetail() {
