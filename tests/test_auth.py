@@ -49,6 +49,15 @@ def login_on(tmp_path, monkeypatch):
     ("PATCH", "/api/bookmarks/1"),
     ("GET", "/api/bookmarks/1"),
     ("POST", "/api/bookmarks/1/summarize"),
+    ("GET", "/api/study"),
+    ("POST", "/api/study"),
+    ("GET", "/api/study/1"),
+    ("DELETE", "/api/study/1"),
+    ("POST", "/api/study/1/steps/1"),
+    ("POST", "/api/study/1/answers/1"),
+    ("PUT", "/api/study/1/drafts/1"),
+    ("POST", "/api/study/1/sources-ready"),
+    ("POST", "/api/study/bulk-delete"),
     ("GET", "/api/categories"),
     ("POST", "/api/categories"),
     ("PATCH", "/api/categories/1"),
@@ -64,7 +73,7 @@ def test_api_rejects_unauthenticated(login_on, method, path):
     assert r.json() == {"detail": "Not logged in"}
 
 
-@pytest.mark.parametrize("path", ["/", "/library", "/docs", "/openapi.json", "/no-such-page"])
+@pytest.mark.parametrize("path", ["/", "/library", "/study", "/study/1", "/docs", "/openapi.json", "/no-such-page"])
 def test_pages_redirect_to_login(login_on, path):
     r = login_on.get(path)
     assert r.status_code == 303

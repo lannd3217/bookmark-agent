@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field, StringConstraints
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 import anthropic
-from . import agent, auth, db, shelves, summaries
+from . import agent, auth, db, shelves, study_notes, summaries
 from .claude_log import instrument
 from .extract import fetch_page
 from .importers.facebook import parse_facebook_saves
@@ -73,6 +73,24 @@ class BookmarkPatch(BaseModel):
 
 class SummarizeIn(BaseModel):
     regenerate: bool = False
+
+class StudyNoteIn(BaseModel):
+    topic: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
+    bookmark_ids: list[int] = Field(min_length=1)
+    summarize_first: bool = False
+
+class StudyStepIn(BaseModel):
+    regenerate: bool = False
+
+class StudyBulkDeleteIn(BaseModel):
+    ids: list[int] = Field(min_length=1, max_length=100)
+
+class StudyDraftIn(BaseModel):
+    text: str = Field(max_length=study_notes.ANSWER_MAX)
+
+class StudyAnswerIn(BaseModel):
+    answer: Annotated[str, StringConstraints(strip_whitespace=True, min_length=study_notes.ANSWER_MIN,
+                                             max_length=study_notes.ANSWER_MAX)]
 
 PUBLIC_PATHS = {"/login", "/health"}
 CRON_PREFIX = "/api/cron/"
@@ -135,6 +153,14 @@ def hello():
 @app.get("/library")
 def library_page():
     return FileResponse(STATIC / "library.html")
+
+@app.get("/study")
+def study_list_page():
+    return FileResponse(STATIC / "study.html")
+
+@app.get("/study/{nid}")
+def study_note_page(nid: int):
+    return FileResponse(STATIC / "study.html")
 
 @app.get("/health")
 def health():
@@ -249,6 +275,77 @@ def update_bookmark(bid: int, inp: BookmarkPatch):
     except db.ShelfError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return db.get(bid)
+
+# --- study notes -----------------------------------------------------------------
+
+def _study_call(fn, *args):
+    """Run a study_notes call, mapping its errors to HTTP and None to 404."""
+    try:
+        result = fn(*args)
+    except study_notes.RateLimited as exc:
+        raise HTTPException(status_code=429, detail=str(exc), headers={"Retry-After": str(exc.retry_after)})
+    except study_notes.StudyError as exc:
+        raise HTTPException(status_code=exc.status, detail=str(exc))
+    if result is None:
+        raise HTTPException(status_code=404, detail="Study note not found")
+    return result
+
+@app.get("/api/study")
+def list_study_notes():
+    return {"notes": study_notes.list_notes()}
+
+@app.post("/api/study", status_code=201)
+def create_study_note(inp: StudyNoteIn):
+    nid = _study_call(study_notes.create_note, inp.topic, inp.bookmark_ids, inp.summarize_first)
+    return study_notes.view(db.get_study_note(nid))
+
+@app.get("/api/study/{nid}")
+def get_study_note(nid: int):
+    note = db.get_study_note(nid)
+    if not note:
+        raise HTTPException(status_code=404, detail="Study note not found")
+    return study_notes.view(note)
+
+@app.post("/api/study/{nid}/sources-ready")
+def study_sources_ready(nid: int):
+    """The page finished (or skipped) summarizing the note's sources; step 1 can start."""
+    if not db.mark_study_sources_ready(nid):
+        raise HTTPException(status_code=404, detail="Study note not found")
+    return study_notes.view(db.get_study_note(nid))
+
+@app.post("/api/study/bulk-delete")
+def bulk_delete_study_notes(inp: StudyBulkDeleteIn):
+    """Delete several notes; each in its own transaction, so one failure never stops the rest.
+    Returns which were deleted, which didn't exist, and which failed (with why)."""
+    deleted, not_found, failed = [], [], []
+    for nid in dict.fromkeys(inp.ids):
+        try:
+            (deleted if db.delete_study_note(nid) else not_found).append(nid)
+        except Exception as exc:
+            log.warning("Deleting study note %s failed: %s: %s", nid, type(exc).__name__, exc)
+            failed.append({"id": nid, "detail": "Couldn't delete it; try again."})
+    return {"deleted": deleted, "not_found": not_found, "failed": failed}
+
+@app.delete("/api/study/{nid}")
+def delete_study_note(nid: int):
+    if not db.delete_study_note(nid):
+        raise HTTPException(status_code=404, detail="Study note not found")
+    return {"ok": True}
+
+@app.post("/api/study/{nid}/steps/{n}")
+def run_study_step(nid: int, n: Annotated[int, Field(ge=1, le=3)], inp: StudyStepIn | None = None):
+    """Steps 1-3 (mental models, debates, questions). Returns the saved result unless regenerate."""
+    return _study_call(study_notes.run_step, nid, n, bool(inp and inp.regenerate))
+
+@app.put("/api/study/{nid}/drafts/{q}")
+def save_study_draft(nid: int, q: Annotated[int, Field(ge=1)], inp: StudyDraftIn):
+    """Save an unsent answer draft for question q (blank deletes it). Not an attempt; no AI call."""
+    return _study_call(study_notes.save_draft, nid, q, inp.text)
+
+@app.post("/api/study/{nid}/answers/{q}")
+def answer_study_question(nid: int, q: Annotated[int, Field(ge=1)], inp: StudyAnswerIn):
+    """Step 4: check an answer to question q and save the feedback."""
+    return _study_call(study_notes.answer, nid, q, inp.answer)
 
 # --- shelves ------------------------------------------------------------------
 

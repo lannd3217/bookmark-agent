@@ -17,6 +17,7 @@ import httpx
 
 import app.categorize as categorizer
 import app.db as db
+import app.study as study
 import app.summarize as summarizer
 from app.sources import arxiv_fulltext
 
@@ -43,3 +44,12 @@ def no_summarize_api_or_arxiv_calls(monkeypatch):
 
     monkeypatch.setattr(summarizer, "summarize", real_summarize_called)
     monkeypatch.setattr(arxiv_fulltext, "_client", lambda: httpx.Client(transport=httpx.MockTransport(offline)))
+
+
+@pytest.fixture(autouse=True)
+def no_study_api_calls(monkeypatch):
+    """Study steps and feedback never reach the model in tests; tests fake the step functions."""
+    def real_study_called(*args, **kwargs):
+        raise AssertionError("a test reached the real study model call; patch the app.study step functions")
+
+    monkeypatch.setattr(study, "_ask", real_study_called)

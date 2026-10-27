@@ -11,7 +11,7 @@ from . import summarize as summarizer
 from .sources import arxiv_fulltext
 
 log = logging.getLogger(__name__)
-RATE_LIMIT = 30     # summary model calls per hour, across the whole app
+RATE_LIMIT = 60     # summary model calls per hour, across the whole app (a whole shelf can need many)
 
 
 class SummaryError(Exception):

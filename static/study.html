@@ -1,0 +1,1445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Study · Personal Knowledge Collection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Study notes. Night lab, study edition: a calm 760px reading column. A vertical stepper walks through four
+   questions; cited claims carry accent chips, general knowledge is set apart in dashed grey. Dark only. */
+:root {
+  --bg: #0a0c0f;
+  --bg-raise: #10141a;
+  --bg-hover: #141922;
+  --fg: #dfe4ea;
+  --fg-2: #a9b2bd;
+  --fg-3: #8590a0;
+  --line: #1e242d;
+  --line-2: #2a323e;
+  --accent: #79e2ff;
+  --accent-dim: #4fb3d1;
+  --accent-glow: rgba(121, 226, 255, .18);
+  --accent-ink: #04141a;
+  --danger: #ff9a9a;
+  /* verdicts and question types (semantic, not accents) */
+  --amber: #e8c27a;
+  --violet: #c4b0ff;
+  --green: #8fd6a8;
+
+  --sans: "IBM Plex Sans", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --fs-meta: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.875rem;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+body {
+  margin: 0; min-height: 100vh; color: var(--fg); font-family: var(--sans); font-size: var(--fs-md); line-height: 1.6;
+  background: radial-gradient(60rem 28rem at 50% -8rem, rgba(121, 226, 255, .07), transparent 70%), var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+[hidden] { display: none !important; }
+.wrap {
+  max-width: calc(760px + 40px); margin: 0 auto;
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+}
+a { color: inherit; text-decoration: none; }
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 1.5px solid var(--accent); outline-offset: 3px; border-radius: 4px; box-shadow: 0 0 0 4px var(--accent-glow); }
+::selection { background: var(--accent); color: var(--accent-ink); }
+
+/* Top bar (as on Home and Library) */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 18px; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
+.mark {
+  flex: none; display: inline-grid; place-items: center; height: 28px; padding: 0 7px;
+  font-family: var(--mono); font-size: 0.75rem; font-weight: 500; letter-spacing: 0.08em; line-height: 1;
+  color: var(--accent); background: rgba(121, 226, 255, .06);
+  border: 1px solid rgba(121, 226, 255, .45); border-radius: 7px;
+  text-shadow: 0 0 10px rgba(121, 226, 255, .45);
+  box-shadow: 0 0 12px rgba(121, 226, 255, .10), inset 0 0 8px rgba(121, 226, 255, .06);
+  transition: box-shadow .25s, border-color .25s;
+}
+.brand:hover .mark { border-color: var(--accent); box-shadow: 0 0 18px var(--accent-glow), inset 0 0 8px rgba(121, 226, 255, .1); }
+.brand-name { min-width: 0; }
+@media (max-width: 559px) { .brand-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } }
+.nav { display: flex; align-items: center; gap: 18px; font-size: var(--fs-sm); color: var(--fg-2); }
+@media (max-width: 400px) { .nav { gap: 14px; } }
+.nav a { position: relative; transition: color .2s; }
+.nav a:hover { color: var(--accent); }
+.nav a[aria-current="page"] { color: var(--accent); text-shadow: 0 0 12px rgba(121, 226, 255, .35); }
+.nav a[aria-current="page"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 1px; background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+main { padding-block: 32px 96px; }
+.mono { font-family: var(--mono); }
+.eyebrow { margin: 0 0 8px; font-family: var(--mono); font-size: var(--fs-meta); letter-spacing: 0.06em; color: var(--accent-dim); }
+.back { display: inline-flex; gap: 8px; margin-bottom: 22px; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); transition: color .2s; }
+.back:hover { color: var(--accent); }
+.label { margin: 0 0 6px; font-family: var(--mono); font-size: var(--fs-meta); font-weight: 500; letter-spacing: 0.06em; color: var(--fg-3); text-transform: lowercase; }
+.label::before { content: "// "; color: var(--accent-dim); }
+.linkish { background: none; border: 0; padding: 0; cursor: pointer; color: var(--accent); font-family: var(--mono); font-size: var(--fs-meta); }
+.linkish:hover { text-shadow: 0 0 10px rgba(121, 226, 255, .5); }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 10px; border: 0; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink); font-size: var(--fs-sm); font-weight: 600; transition: box-shadow .2s, transform .1s;
+}
+.btn:hover:not(:disabled) { box-shadow: 0 0 18px rgba(121, 226, 255, .35); }
+.btn:active:not(:disabled) { transform: scale(.98); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--accent); border: 1px solid rgba(121, 226, 255, .4); }
+.btn.ghost:hover { background: rgba(121, 226, 255, .06); }
+@keyframes boot { from { opacity: 0; transform: translateY(8px); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes pulse { 50% { opacity: .35; box-shadow: 0 0 2px var(--accent); } }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+/* Citations and general knowledge */
+.cite {
+  display: inline-block; margin: 0 1px; padding: 0 5px; border-radius: 4px; line-height: 1.5; vertical-align: 1px;
+  font-family: var(--mono); font-size: 0.6875rem; color: var(--accent); background: rgba(121, 226, 255, .1);
+  transition: background .2s, box-shadow .2s;
+}
+.cite:hover { background: rgba(121, 226, 255, .2); box-shadow: 0 0 8px var(--accent-glow); }
+.gk { color: var(--fg-2); font-style: italic; text-decoration: underline dashed var(--fg-3); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.gk-tag {
+  display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; line-height: 1.5; vertical-align: 1px; white-space: nowrap;
+  font-family: var(--mono); font-size: 0.625rem; font-style: normal; letter-spacing: 0.04em; color: var(--fg-3); border: 1px dashed var(--fg-3);
+}
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; font-size: var(--fs-meta); color: var(--fg-3); }
+.legend > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.legend .gk-tag { margin-left: 0; }
+@media (max-width: 480px) { .legend { flex-direction: column; } }
+
+/* Note header */
+.note-head h1 { margin: 0 0 10px; font-size: var(--fs-xl); font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; text-wrap: balance; }
+.note-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 18px; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); }
+.note-meta b { color: var(--fg-2); font-weight: 500; }
+.sources { border: 1px solid var(--line); border-radius: 12px; background: var(--bg-raise); }
+.sources summary {
+  display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; list-style: none;
+  font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-2); transition: color .2s;
+}
+.sources summary::-webkit-details-marker { display: none; }
+.sources summary:hover { color: var(--accent); }
+.sources summary .chev { color: var(--accent-dim); transition: transform .25s; }
+.sources[open] summary .chev { transform: rotate(90deg); }
+.sources summary .cov { margin-left: auto; color: var(--fg-3); }
+.src-list { list-style: none; margin: 0; padding: 4px 16px 12px; border-top: 1px solid var(--line); }
+.src-list li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 2px 8px; padding: 10px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 24px; transition: background .4s; }
+.src-list li:last-child { border-bottom: 0; }
+.src-list li.flash { background: rgba(121, 226, 255, .08); }
+.src-list .n { grid-row: 1 / span 2; font-family: var(--mono); font-size: var(--fs-meta); color: var(--accent); padding-top: 2px; }
+.src-list .t { font-size: var(--fs-sm); line-height: 1.5; overflow-wrap: anywhere; }
+.src-list .m { font-family: var(--mono); font-size: 0.6875rem; color: var(--fg-3); }
+.src-list .m .has { color: var(--accent-dim); }
+.head-foot { display: grid; gap: 14px; margin-top: 16px; }
+
+/* Stepper */
+.steps { list-style: none; margin: 32px 0 0; padding: 0; }
+.step { position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr); column-gap: 18px; padding-bottom: 44px; }
+.step::before { content: ""; position: absolute; left: 16px; top: 40px; bottom: 6px; width: 2px; border-radius: 2px; background: var(--line-2); }
+.step:last-child { padding-bottom: 0; }
+.step:last-child::before { display: none; }
+.step.done::before { background: linear-gradient(var(--accent-dim), var(--line-2)); }
+.node {
+  width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; z-index: 1;
+  font-family: var(--mono); font-size: var(--fs-sm); color: var(--fg-3); background: var(--bg); border: 1.5px solid var(--line-2);
+  transition: background .3s, color .3s, border-color .3s, box-shadow .3s;
+}
+.step.done .node { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: 0 0 14px var(--accent-glow); }
+.step.ready .node, .step.loading .node { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 5px rgba(121, 226, 255, .08), 0 0 14px var(--accent-glow); }
+.step-body { min-width: 0; padding-top: 4px; }
+.step-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 10px; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); }
+.state { padding: 0 7px; border-radius: 4px; line-height: 1.6; font-size: 0.6875rem; border: 1px solid var(--line-2); }
+.step.done .state { color: var(--accent); border-color: rgba(121, 226, 255, .35); background: rgba(121, 226, 255, .06); }
+.step.ready .state, .step.loading .state { color: var(--fg); border-color: var(--line-2); }
+.q-btn {
+  width: 100%; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; text-align: left; cursor: pointer;
+  padding: 16px 18px; border-radius: 12px; font-size: 1.0625rem; line-height: 1.55; font-weight: 500;
+  background: rgba(121, 226, 255, .05); border: 1px solid rgba(121, 226, 255, .4); color: var(--fg);
+  transition: background .2s, box-shadow .2s, border-color .2s;
+}
+.q-btn .go { flex: none; font-family: var(--mono); color: var(--accent); transition: transform .25s; padding-top: 1px; }
+.q-btn:hover:not(:disabled) { background: rgba(121, 226, 255, .09); box-shadow: 0 0 22px var(--accent-glow); }
+.q-btn:hover:not(:disabled) .go { transform: translateX(3px); }
+.q-btn:disabled { cursor: not-allowed; background: transparent; border: 1px dashed var(--line-2); color: var(--fg-2); }
+.q-done { margin: 0; font-size: 1.0625rem; line-height: 1.55; font-weight: 500; text-wrap: pretty; }
+.step.locked .step-top, .step.locked .q-btn { opacity: .55; }
+.lock-note { display: inline-flex; align-items: center; gap: 8px; margin: 10px 0 0; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); }
+.step-content { margin-top: 22px; display: grid; gap: 16px; animation: boot .5s cubic-bezier(.2,.8,.2,1) both; }
+.coverage { margin: 0; padding: 12px 14px; border-radius: 10px; border-left: 2px solid var(--accent-dim); background: rgba(121, 226, 255, .04); font-size: var(--fs-sm); line-height: 1.65; color: var(--fg-2); }
+
+.loading { margin-top: 18px; display: grid; gap: 12px; padding: 20px 22px; border-radius: 14px; border: 1px dashed var(--line-2); background: var(--bg); }
+.loading p { margin: 0 0 4px; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-2); }
+.loading p::before {
+  content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 10px; vertical-align: 1px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: pulse 1.2s ease-in-out infinite;
+}
+.skel { height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--line) 0%, var(--line-2) 40%, var(--line) 80%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+.skel.w1 { width: 92%; } .skel.w2 { width: 76%; } .skel.w3 { width: 58%; }
+
+/* Cards */
+.card { padding: 20px 22px; border-radius: 14px; background: var(--bg-raise); border: 1px solid var(--line); }
+.card h3 { margin: 0 0 14px; display: flex; align-items: baseline; gap: 12px; font-size: 1.125rem; font-weight: 500; letter-spacing: -0.01em; line-height: 1.4; }
+.card h3 .num { flex: none; font-family: var(--mono); font-size: var(--fs-meta); color: var(--accent-dim); }
+.prose { margin: 0; font-size: var(--fs-md); line-height: 1.75; max-width: 64ch; }
+.part + .part { margin-top: 14px; }
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 0.6875rem; color: var(--fg-3); }
+
+.sides { display: grid; gap: 12px; }
+@media (min-width: 680px) { .sides { grid-template-columns: 1fr 1fr; } }
+.side { padding: 16px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); min-width: 0; }
+.side-tag { display: inline-block; margin-bottom: 8px; padding: 0 7px; border-radius: 4px; line-height: 1.6; font-family: var(--mono); font-size: 0.6875rem; color: var(--fg-2); border: 1px solid var(--line-2); }
+.side .pos { margin: 0 0 12px; font-weight: 500; line-height: 1.55; }
+.side .prose { font-size: 0.9375rem; line-height: 1.7; }
+.settle { margin-top: 14px; padding: 14px 16px; border-radius: 12px; border: 1px dashed rgba(121, 226, 255, .35); }
+.settle .prose { font-size: 0.9375rem; line-height: 1.7; }
+
+.qlist { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.qlist li { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 6px 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.qlist .num { font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); padding-top: 3px; }
+.qlist .qt { line-height: 1.65; }
+.qlist .type { grid-column: 2; justify-self: start; }
+.type { display: inline-block; padding: 0 7px; border-radius: 4px; line-height: 1.6; font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.04em; border: 1px solid currentColor; }
+.type.explain { color: var(--accent-dim); }
+.type.apply { color: var(--green); }
+.type.predict { color: var(--violet); }
+.type.compare { color: var(--amber); }
+.type.critique { color: var(--danger); }
+
+/* Step 4: answering */
+.progress { display: flex; align-items: center; gap: 14px; }
+.progress .count { flex: none; font-family: var(--mono); font-size: var(--fs-sm); color: var(--fg); font-variant-numeric: tabular-nums; }
+.segs { flex: 1; display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.segs i { height: 4px; border-radius: 2px; background: var(--line-2); transition: background .3s, box-shadow .3s; }
+.segs i.done { background: var(--accent-dim); }
+.segs i.now { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.ask-q { margin: 0; font-size: 1.125rem; line-height: 1.6; font-weight: 500; text-wrap: pretty; }
+.answer-box { display: grid; gap: 8px; }
+.answer-box label { font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); }
+.answer-box textarea {
+  width: 100%; min-width: 0; min-height: 150px; resize: vertical; padding: 12px 14px; border-radius: 12px;
+  background: var(--bg); border: 1px solid var(--line-2); color: var(--fg); font-size: var(--fs-md); line-height: 1.7; outline: 0;
+  transition: border-color .2s, box-shadow .2s;
+}
+.answer-box textarea:focus { border-color: rgba(121, 226, 255, .55); box-shadow: 0 0 0 4px var(--accent-glow); }
+.answer-box textarea::placeholder { color: var(--fg-3); }
+.answer-box .hint { margin: 0; font-size: var(--fs-meta); color: var(--fg-3); }
+.row-btns { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.row-btns .spacer { flex: 1; }
+
+.feedback { display: grid; gap: 22px; padding: 22px; border-radius: 14px;
+  background: linear-gradient(var(--bg), var(--bg)) padding-box, linear-gradient(150deg, rgba(121, 226, 255, .45), var(--line-2) 35%, var(--line) 100%) border-box;
+  border: 1px solid transparent; animation: boot .5s cubic-bezier(.2,.8,.2,1) both; }
+.verdict { display: inline-flex; align-items: center; gap: 8px; padding: 3px 10px; border-radius: 999px; font-family: var(--mono); font-size: var(--fs-meta); letter-spacing: 0.06em; border: 1px solid currentColor; }
+.verdict::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
+.verdict.deep { color: var(--accent); }
+.verdict.partial { color: var(--amber); }
+.verdict.shallow { color: var(--fg-2); }
+.verdict.incorrect { color: var(--danger); }
+.fb-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.fb-head p { margin: 0; font-size: var(--fs-sm); color: var(--fg-2); }
+.fb-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fb-list li { position: relative; padding-left: 22px; line-height: 1.7; }
+.fb-list.right li::before { content: "✓"; position: absolute; left: 2px; color: var(--accent); font-family: var(--mono); font-size: var(--fs-sm); }
+.fb-list.missing li::before { content: "+"; position: absolute; left: 3px; color: var(--amber); font-family: var(--mono); }
+.fb-wrong { margin: 0; line-height: 1.7; }
+.fb-wrong.none { color: var(--fg-3); }
+.model { border-top: 1px solid var(--line); padding-top: 14px; }
+.model summary { display: inline-flex; gap: 10px; cursor: pointer; list-style: none; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-2); }
+.model summary::-webkit-details-marker { display: none; }
+.model summary:hover { color: var(--accent); }
+.model summary .chev { color: var(--accent-dim); transition: transform .25s; }
+.model[open] summary .chev { transform: rotate(90deg); }
+.model .prose { margin-top: 12px; animation: boot .35s cubic-bezier(.2,.8,.2,1) both; }
+.follow { padding: 14px 16px; border-radius: 12px; background: rgba(121, 226, 255, .05); border: 1px solid rgba(121, 226, 255, .2); }
+.follow .prose { font-weight: 500; }
+.done-card { text-align: left; }
+.tally { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
+
+/* Notes list */
+.list-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 14px; margin-bottom: 22px; }
+.list-head h1 { margin: 0; font-size: var(--fs-xl); font-weight: 500; letter-spacing: -0.02em; }
+.list-head p { margin: 4px 0 0; color: var(--fg-3); font-size: var(--fs-sm); }
+.notes { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.note-row {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 20px; align-items: center;
+  padding: 18px 20px; border-radius: 14px; background: var(--bg-raise); border: 1px solid var(--line);
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.note-row:hover, .note-row:focus-visible { border-color: rgba(121, 226, 255, .35); box-shadow: 0 0 20px rgba(121, 226, 255, .06); background: var(--bg-hover); }
+.note-row h2 { margin: 0 0 4px; font-size: 1.0625rem; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+.note-row .meta { font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); }
+.note-row .meta .picked { color: var(--fg-2); }
+.stats { display: grid; gap: 8px; justify-items: end; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-2); white-space: nowrap; }
+.dots { display: inline-flex; gap: 4px; margin-right: 8px; vertical-align: 1px; }
+.dots i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--line-2); }
+.dots i.on { background: var(--accent-dim); border-color: var(--accent-dim); }
+.bar { display: inline-block; width: 64px; height: 4px; margin-right: 8px; vertical-align: 2px; border-radius: 2px; background: var(--line-2); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent-dim); }
+@media (max-width: 520px) {
+  .note-row { grid-template-columns: minmax(0, 1fr); }
+  .stats { justify-items: start; }
+}
+.new-note { margin-top: 18px; font-size: var(--fs-sm); color: var(--fg-3); }
+
+/* Tabs: Steps | Map */
+.tabs { display: flex; gap: 4px; margin-top: 28px; border-bottom: 1px solid var(--line); }
+.tab { position: relative; padding: 10px 14px; font-family: var(--mono); font-size: var(--fs-sm); color: var(--fg-3); transition: color .2s; }
+.tab:hover { color: var(--fg); }
+.tab[aria-selected="true"] { color: var(--accent); }
+.tab[aria-selected="true"]::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; border-radius: 2px; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+/* Real-data states (not in the preview) */
+.page-msg { margin: 32px 0 0; padding: 22px 20px; border: 1px dashed var(--line-2); border-radius: 14px; color: var(--fg-2); font-size: var(--fs-sm); line-height: 1.7; }
+.page-msg strong { display: block; margin-bottom: 4px; color: var(--fg); font-size: var(--fs-md); font-weight: 500; }
+.page-msg.error { color: var(--danger); border-color: rgba(255, 154, 154, .35); }
+.page-msg .linkish, .page-msg a.linkish { display: inline-block; margin-top: 10px; }
+.page-loading { margin: 40px 0 0; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); }
+.page-loading::before {
+  content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 10px; vertical-align: 1px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: pulse 1.2s ease-in-out infinite;
+}
+.step-error { margin: 14px 0 0; padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255, 154, 154, .35); color: var(--danger); font-size: var(--fs-sm); line-height: 1.6; }
+.step-error .linkish { margin-left: 8px; }
+.step-top .linkish { margin-left: auto; }
+.confirm-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 12px; padding: 12px 14px; border-radius: 10px; background: var(--bg-raise); border: 1px solid var(--line-2); font-size: var(--fs-sm); color: var(--fg-2); line-height: 1.6; animation: boot .3s cubic-bezier(.2,.8,.2,1) both; }
+.confirm-row .btn { padding: 7px 14px; }
+.confirm-row .btn.danger { background: var(--danger); color: #1a0606; }
+.head-actions { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+.head-actions .linkish.del { color: var(--fg-3); }
+.head-actions .linkish.del:hover { color: var(--danger); text-shadow: none; }
+.type.other { color: var(--fg-2); }
+.src-list .t a:hover { color: var(--accent); }
+.your-answer { margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--bg-raise); border-left: 2px solid var(--line-2); color: var(--fg-2); font-size: var(--fs-sm); line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fb-wrong-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.fb-wrong-list .claim { margin: 0; font-style: italic; color: var(--fg-2); }
+.fb-wrong-list .why { margin: 4px 0 0; line-height: 1.7; }
+.model .reveal { margin-top: 16px; display: grid; gap: 12px; }
+.model .reveal .label { margin-bottom: 4px; }
+.practice-error { margin: 0; color: var(--danger); font-size: var(--fs-sm); line-height: 1.6; }
+.practice-error:empty { display: none; }
+.empty-notes { padding: 28px 20px; border: 1px dashed var(--line-2); border-radius: 14px; color: var(--fg-2); font-size: var(--fs-sm); line-height: 1.7; }
+.empty-notes strong { display: block; margin-bottom: 4px; color: var(--fg); font-size: var(--fs-md); font-weight: 500; }
+
+/* Preparing sources (Summarize first) */
+.prep:empty { display: none; }
+.prep { margin-top: 28px; padding: 20px 22px; border-radius: 14px; background: var(--bg-raise); border: 1px solid rgba(121, 226, 255, .3); animation: boot .4s cubic-bezier(.2,.8,.2,1) both; }
+.prep h2 { margin: 0 0 6px; font-size: var(--fs-lg); font-weight: 500; }
+.prep .sub { margin: 0 0 16px; color: var(--fg-3); font-size: var(--fs-sm); line-height: 1.6; }
+.prep-progress { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-2); white-space: nowrap; }
+.prep-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--line-2); overflow: hidden; }
+.prep-bar i { display: block; height: 100%; background: var(--accent-dim); box-shadow: 0 0 8px rgba(121, 226, 255, .4); transition: width .4s ease; }
+.prep-alert { margin: 14px 0 0; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(232, 194, 122, .45); color: var(--amber); font-size: var(--fs-sm); line-height: 1.6; }
+.prep-alert:empty { display: none; }
+.prep-list { list-style: none; margin: 14px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.prep-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-sm); }
+.prep-list .t { min-width: 0; overflow-wrap: anywhere; line-height: 1.45; }
+.prep-st { font-family: var(--mono); font-size: 0.6875rem; white-space: nowrap; color: var(--fg-3); }
+.prep-st.reading, .prep-st.retrying { color: var(--accent); }
+.prep-st.reading::before, .prep-st.retrying::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; vertical-align: 1px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+.prep-st.done { color: var(--accent-dim); }
+.prep-st.excerpt, .prep-st.limit, .prep-st.skipped { color: var(--amber); }
+.prep-st.failed { color: var(--danger); }
+.prep-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 14px; }
+.prep.finished { padding: 12px 16px; border-color: var(--line); }
+.prep.finished p { margin: 0; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-2); }
+.prep.finished b { color: var(--accent-dim); font-weight: 500; }
+
+/* ⋯ menu and the delete confirmation */
+.title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.title-row h1 { min-width: 0; overflow-wrap: anywhere; }
+.menu-wrap { position: relative; flex: none; }
+.more-btn {
+  width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; cursor: pointer;
+  background: var(--bg-raise); border: 1px solid var(--line-2); color: var(--fg-2); font-size: 1.125rem; line-height: 1;
+  transition: color .2s, border-color .2s;
+}
+.more-btn:hover, .more-btn[aria-expanded="true"] { color: var(--accent); border-color: rgba(121, 226, 255, .45); }
+.menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 180px; padding: 4px;
+  background: var(--bg-raise); border: 1px solid var(--line-2); border-radius: 10px; box-shadow: 0 14px 40px rgba(0, 0, 0, .5);
+  animation: boot .2s cubic-bezier(.2,.8,.2,1) both;
+}
+.menu button { display: block; width: 100%; padding: 9px 12px; border: 0; border-radius: 8px; background: none; cursor: pointer; text-align: left; font-size: var(--fs-sm); color: var(--fg); }
+.menu button:hover, .menu button:focus-visible { background: var(--bg-hover); }
+.menu button.danger { color: var(--danger); }
+/* Study list: a checkbox on every row; a selection bar with Delete appears once something is ticked */
+.note-item { position: relative; }
+.note-item .note-row { padding-left: 60px; }
+.pick {
+  position: absolute; z-index: 1; top: 50%; left: 8px; transform: translateY(-50%);
+  width: 44px; height: 44px; display: grid; place-items: center; border-radius: 10px; cursor: pointer;
+}
+.pick:hover .check { border-color: var(--accent-dim); }
+.note-item.selected .note-row { border-color: rgba(121, 226, 255, .45); background: rgba(121, 226, 255, .05); }
+.check {
+  appearance: none; -webkit-appearance: none; width: 18px; height: 18px; margin: 0; border-radius: 5px; cursor: pointer;
+  border: 1.5px solid var(--line-2); background: var(--bg); display: grid; place-items: center;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.check::after { content: ""; width: 9px; height: 5px; border: 2px solid var(--accent-ink); border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }
+.check:checked { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+.check:checked::after { opacity: 1; }
+.check:focus-visible { outline-offset: 4px; }
+
+/* Desktop: the bar opens above the list (sliding its height), and sticks while scrolling. */
+.selbar-slot {
+  position: sticky; z-index: 15; top: calc(10px + env(safe-area-inset-top, 0px));
+  display: grid; grid-template-rows: 0fr; visibility: hidden;
+  transition: grid-template-rows .3s cubic-bezier(.2,.8,.2,1), visibility 0s linear .3s;
+}
+.selbar-slot.open { grid-template-rows: 1fr; visibility: visible; transition: grid-template-rows .3s cubic-bezier(.2,.8,.2,1), visibility 0s; }
+.selbar-clip { min-height: 0; overflow: hidden; padding-inline: 2px; margin-inline: -2px; }
+.selbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-bottom: 14px; padding: 10px 10px 10px 18px; border-radius: 14px;
+  background: var(--bg-raise); border: 1px solid rgba(121, 226, 255, .35); box-shadow: 0 0 24px rgba(121, 226, 255, .08);
+  opacity: 0; transform: translateY(-6px); transition: opacity .25s ease, transform .3s cubic-bezier(.2,.8,.2,1);
+}
+.selbar-slot.open .selbar { opacity: 1; transform: none; }
+.selbar-n { font-family: var(--mono); font-size: var(--fs-sm); color: var(--fg); white-space: nowrap; }
+.selbar-n b { color: var(--accent); font-weight: 500; }
+.selbar .linkish { padding: 6px 0; white-space: nowrap; }
+.selbar .btn { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.selbar .btn.danger { background: var(--danger); color: #1a0606; }
+.selbar .btn svg { width: 17px; height: 17px; }
+/* Phones: the bar is fixed at the bottom of the screen and slides up. */
+@media (max-width: 600px) {
+  .selbar-slot {
+    position: fixed; top: auto; left: 0; right: 0; bottom: 0; display: block;
+    padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+    pointer-events: none;
+  }
+  .selbar-slot.open { pointer-events: auto; }
+  .selbar-clip { overflow: visible; margin: 0; padding: 0; }
+  .selbar-n, .selbar .linkish { font-size: var(--fs-meta); }
+  .selbar .btn { padding: 9px 14px; }
+  .selbar { margin: 0; gap: 8px 12px; padding: 8px 8px 8px 14px; transform: translateY(18px); box-shadow: 0 14px 40px rgba(0, 0, 0, .5), 0 0 24px rgba(121, 226, 255, .08); }
+  body.has-selbar main { padding-bottom: 120px; }
+}
+.flash-msg.warn { border-color: rgba(232, 194, 122, .5); background: rgba(232, 194, 122, .06); }
+.cdialog-wrap { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 16px; }
+.cdialog-scrim { position: absolute; inset: 0; background: rgba(3, 5, 8, .62); }
+.cdialog {
+  position: relative; width: min(440px, 100%); padding: 22px; border-radius: 16px; background: var(--bg-raise);
+  border: 1px solid var(--line-2); box-shadow: 0 24px 70px rgba(0, 0, 0, .55); animation: boot .3s cubic-bezier(.2,.8,.2,1) both;
+}
+.cdialog h2 { margin: 0 0 10px; font-size: var(--fs-lg); font-weight: 500; line-height: 1.35; overflow-wrap: anywhere; }
+.cdialog p { margin: 0; color: var(--fg-2); font-size: var(--fs-sm); line-height: 1.7; }
+.cdialog .btns { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.cdialog .btn.danger { background: var(--danger); color: #1a0606; }
+.cdialog .err { margin-top: 12px; color: var(--danger); }
+.cdialog .err:empty { display: none; }
+.flash-msg { margin: 0 0 16px; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(121, 226, 255, .35); background: rgba(121, 226, 255, .06); color: var(--fg); font-size: var(--fs-sm); animation: boot .3s cubic-bezier(.2,.8,.2,1) both; }
+
+/* Saving: saved times, drafts, save & exit */
+.saved-tag { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-family: var(--mono); font-size: 0.6875rem; color: var(--fg-3); white-space: nowrap; }
+.saved-tag b { color: var(--accent-dim); font-weight: 500; }
+.step-top .saved-tag ~ .linkish { margin-left: 0; }
+.draft-status { margin: 0; min-height: 1.2em; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); }
+.draft-status.error { color: var(--danger); }
+.draft-status .linkish { margin-left: 8px; }
+.exit-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.exit-msg { flex-basis: 100%; margin: 0; font-size: var(--fs-sm); line-height: 1.6; color: var(--danger); }
+.exit-msg:empty { display: none; }
+.exit-msg .linkish { margin-left: 8px; }
+.note-foot { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--line); }
+.note-row .progress-line { display: block; margin-top: 4px; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-2); }
+
+footer { border-top: 1px solid var(--line); padding-block: 14px 36px; font-family: var(--mono); font-size: var(--fs-meta); color: var(--fg-3); }
+
+@media (max-width: 480px) {
+  .step { grid-template-columns: 28px minmax(0, 1fr); column-gap: 12px; }
+  .node { width: 28px; height: 28px; font-size: var(--fs-meta); }
+  .step::before { left: 13px; top: 34px; }
+  .card, .feedback { padding: 18px 16px; }
+  .q-btn { padding: 14px; font-size: 1rem; }
+  :root { --fs-xl: 1.625rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topbar">
+    <a class="brand" href="/"><span class="mark" aria-hidden="true">PKC</span><span class="brand-name">Personal Knowledge Collection</span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="/">Home</a>
+      <a href="/library">Library</a>
+      <a href="/study" aria-current="page">Study</a>
+      <a href="#" id="logout-link">Log out</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="view-notes" hidden aria-labelledby="notes-h">
+      <div class="list-head">
+        <div>
+          <h1 id="notes-h">Study notes</h1>
+          <p>Guided notes built from your saved sources, four steps each.</p>
+        </div>
+        <a class="btn ghost" href="/library"><span aria-hidden="true">+</span> New study note</a>
+      </div>
+      <div class="selbar-slot" id="selbar-slot">
+        <div class="selbar-clip">
+          <div class="selbar" id="selbar" role="region" aria-label="Selected study notes">
+            <span class="selbar-n" id="selbar-n" aria-live="polite"></span>
+            <button class="linkish" id="selbar-all" type="button">Select all</button>
+            <button class="linkish" id="selbar-clear" type="button">Clear</button>
+            <button class="btn danger" id="selbar-delete" type="button"><span>Delete</span></button>
+          </div>
+        </div>
+      </div>
+      <div id="notes-body"><p class="page-loading">Loading your study notes…</p></div>
+    </section>
+
+    <article id="view-note" hidden aria-labelledby="note-h">
+      <a class="back" href="/study"><span aria-hidden="true">←</span> All study notes</a>
+      <div id="note-body"><p class="page-loading">Loading this study note…</p></div>
+    </article>
+  </main>
+
+  <footer>personal knowledge collection</footer>
+</div>
+
+
+<script>
+// All server data is written with textContent / setAttribute, never innerHTML,
+// so a note's topic, sources, or any AI-written text can't be interpreted as markup.
+
+const $ = id => document.getElementById(id);
+function el(tag, props = {}, ...children) {
+  const n = document.createElement(tag);
+  Object.assign(n, props);
+  n.append(...children);
+  return n;
+}
+const str = x => (x === null || x === undefined ? "" : String(x));
+const arr = x => (Array.isArray(x) ? x : []);
+const pad = n => String(n).padStart(2, "0");
+const reduceMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+// Only allow http(s) links in href, even if something else ended up in the DB
+const safeHref = u => {
+  try { const p = new URL(u); return /^https?:$/.test(p.protocol) ? p.href : null; }
+  catch { return null; }
+};
+
+// Single fetch wrapper: throws a readable Error (with .status) on network failure or non-2xx
+async function api(path, opts = {}) {
+  let r;
+  try {
+    r = await fetch(path, opts);
+  } catch {
+    throw new Error("Network error — is the server running?");
+  }
+  // Session expired or missing: go log in again.
+  if (r.status === 401) {
+    location.href = "/login";
+    return new Promise(() => {});
+  }
+  let data = null;
+  const text = await r.text();
+  if (text) {
+    try { data = JSON.parse(text); } catch { data = text; }
+  }
+  if (!r.ok) {
+    const d = data && data.detail;
+    const msg = typeof d === "string" ? d
+      : Array.isArray(d) ? d.map(x => x.msg).join("; ")
+      : `Request failed (${r.status})`;
+    const err = new Error(msg);
+    err.status = r.status;
+    throw err;
+  }
+  return data;
+}
+const send = (method, path, body) => api(path, {
+  method, headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body),
+});
+
+// Timestamps from the server are UTC "YYYY-MM-DD HH:MM:SS"
+const parseUtc = s => {
+  const d = new Date(str(s).replace(" ", "T") + (/[zZ]|[+-]\d\d:?\d\d$/.test(str(s)) ? "" : "Z"));
+  return isNaN(d) ? null : d;
+};
+const LONG = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
+const SHORT = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+const longDate = s => { const d = parseUtc(s); return d ? LONG.format(d) : ""; };
+const shortDate = s => { const d = parseUtc(s); return d ? SHORT.format(d) : ""; };
+const TIME = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" });
+// "2:41 PM" today, "Oct 24, 2:41 PM" on other days
+const savedTime = s => {
+  const d = parseUtc(s);
+  if (!d) return "";
+  return d.toDateString() === new Date().toDateString() ? TIME.format(d) : `${SHORT.format(d)}, ${TIME.format(d)}`;
+};
+const PLATFORM_LABELS = { x: "X", substack: "Substack", arxiv: "arXiv", instagram: "Instagram", facebook: "Facebook", web: "web" };
+const platformLabel = p => PLATFORM_LABELS[p] || str(p || "web");
+
+$("logout-link").addEventListener("click", async e => {
+  e.preventDefault();
+  try { await fetch("/logout", { method: "POST" }); } finally { location.href = "/login"; }
+});
+
+// --- the steps ------------------------------------------------------------------
+
+const STEPS = [
+  { name: "models", title: "core mental models", q: "What are 5 core mental models that every expert in this field shares?", loading: "Thinking through the core ideas…" },
+  { name: "debates", title: "where experts disagree", q: "Now show me the 3 places where experts fundamentally disagree, and each side's strongest argument", loading: "Weighing where experts disagree…" },
+  { name: "questions", title: "questions", q: "Generate 10 questions that would expose deep understanding versus memorized facts", loading: "Writing questions that test understanding…" },
+  { name: "practice", title: "practice", q: "Answer the questions", loading: "" },
+];
+const TYPES = new Set(["explain", "apply", "predict", "compare", "critique"]);
+const VERDICTS = new Set(["deep", "partial", "shallow", "incorrect"]);
+const VERDICT_LINE = {
+  deep: "You explained the mechanism, not just the facts.",
+  partial: "On the right track, with gaps worth closing.",
+  shallow: "This restates the topic more than it explains it.",
+  incorrect: "The core claim doesn't hold up.",
+};
+
+const noteId = Number((/^\/study\/(\d+)\/?$/.exec(location.pathname) || [])[1]) || null;
+let note = null;
+const ui = { loading: {}, errors: {}, confirm: null };
+const practice = { started: false, at: null, checking: false, error: "", editing: new Set(), finished: false, reviewing: false };
+
+const questions = () => arr(note?.steps?.questions?.questions);
+const answerFor = n => note?.answers?.[n] || note?.answers?.[String(n)] || null;
+const answeredCount = () => questions().filter((_, i) => answerFor(i + 1)?.feedback).length;
+const allAnswered = () => questions().length > 0 && answeredCount() >= questions().length;
+
+function stepState(i) {
+  if (ui.loading[i]) return "loading";
+  const done = i < 3 ? Boolean(note.steps[STEPS[i].name]) : allAnswered();
+  if (done) return "done";
+  if (i === 0) return preparing() ? "locked" : "ready";
+  return note.steps[STEPS[i - 1].name] ? "ready" : "locked";
+}
+
+// --- rich text: [id] citations and (general knowledge) sentences -----------------
+
+const sourceById = () => new Map(arr(note?.sources).map(s => [Number(s.id), s]));
+
+function cites(text) {
+  const out = [], byId = sourceById();
+  for (const part of str(text).split(/(\[\d+\])/)) {
+    const id = /^\[(\d+)\]$/.exec(part)?.[1];
+    const src = id && byId.get(Number(id));
+    if (!src) { if (part) out.push(part); continue; }
+    const a = el("a", { className: "cite", href: `#src-${id}`, textContent: `[${id}]`, title: str(src.title || src.url) });
+    a.addEventListener("click", e => { e.preventDefault(); showSource(Number(id)); });
+    out.push(a);
+  }
+  return out;
+}
+
+function rich(text) {
+  const nodes = [];
+  for (const [i, sentence] of str(text).split(/(?<=[.!?])\s+/).entries()) {
+    if (i) nodes.push(" ");
+    const m = /^(.*?)\s*\(general knowledge\)([.!?]?)$/i.exec(sentence);
+    if (m) nodes.push(el("span", { className: "gk" }, ...cites(m[1] + m[2])), el("span", { className: "gk-tag", textContent: "general knowledge" }));
+    else nodes.push(...cites(sentence));
+  }
+  return nodes;
+}
+const para = (text, cls = "prose") => el("p", { className: cls }, ...rich(text));
+const sourceChips = ids => {
+  const known = arr(ids).filter(id => sourceById().has(Number(id)));
+  return known.length ? el("div", { className: "chips" }, "sources", ...known.flatMap(id => cites(`[${Number(id)}]`))) : "";
+};
+
+function showSource(id) {
+  const box = $("sources");
+  if (!box) return;
+  box.open = true;
+  const li = $(`src-${id}`);
+  if (!li) return;
+  li.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "center" });
+  li.classList.add("flash");
+  setTimeout(() => li.classList.remove("flash"), 1400);
+}
+
+// --- note page ------------------------------------------------------------------
+
+async function loadNote() {
+  try {
+    note = await api(`/api/study/${noteId}`);
+  } catch (err) {
+    const notFound = err.status === 404;
+    $("note-body").replaceChildren(el("div", { className: notFound ? "page-msg" : "page-msg error" },
+      el("strong", { textContent: notFound ? "This study note doesn't exist" : "Couldn't load this study note" }),
+      notFound ? "It may have been deleted." : err.message,
+      notFound ? el("br") : "",
+      notFound ? el("a", { className: "linkish", href: "/study", textContent: "see all study notes →" })
+        : el("button", { className: "linkish", type: "button", textContent: "try again", onclick: loadNote })));
+    return;
+  }
+  document.title = `${note.topic} · Study · Personal Knowledge Collection`;
+  // Pick up where you left off: the most recently drafted question, else the first unanswered one.
+  const drafts = Object.entries(note.drafts || {}).sort((a, b) => str(a[1].saved_at).localeCompare(str(b[1].saved_at)));
+  const unanswered = questions().findIndex((_, i) => !answerFor(i + 1)?.feedback);
+  practice.at = drafts.length ? Number(drafts.at(-1)[0]) - 1 : unanswered === -1 ? 0 : unanswered;
+  practice.started = answeredCount() > 0 || drafts.length > 0;
+  renderNote();
+  if (preparing()) runPrep();      // resumes with whatever still has no summary
+}
+
+function renderNote() {
+  const head = el("header", { className: "note-head" });
+  const withTldr = arr(note.sources).filter(s => s.has_summary).length;
+  head.append(
+    el("p", { className: "eyebrow", textContent: "study note" }),
+    el("div", { className: "title-row" }, el("h1", { id: "note-h", textContent: note.topic }), noteMenu(note)),
+    el("p", { className: "note-meta" },
+      el("span", {}, el("b", { textContent: String(note.sources.length) }), note.sources.length === 1 ? " source" : " sources"),
+      el("span", { textContent: `created ${longDate(note.created_at)}` }),
+      el("span", {}, el("b", { textContent: `${note.progress.steps_done} / 4` }), " steps"),
+      el("span", {}, el("b", { textContent: `${note.progress.answered} / ${note.progress.questions || 10}` }), " answered")));
+  const list = el("ol", { className: "src-list" }, ...note.sources.map(s => {
+    const href = safeHref(s.url), title = str(s.title || s.url);
+    return el("li", { id: `src-${s.id}` },
+      el("span", { className: "n", textContent: `[${s.id}]` }),
+      el("span", { className: "t" }, href ? el("a", { href, target: "_blank", rel: "noopener noreferrer", textContent: title }) : title),
+      el("span", { className: "m" }, `src ${platformLabel(s.platform)} · `, s.has_summary ? el("span", { className: "has", textContent: "✦ TL;DR" }) : "excerpt"));
+  }));
+  head.append(el("details", { className: "sources", id: "sources" },
+    el("summary", {}, el("span", { className: "chev", ariaHidden: "true", textContent: "›" }), `Sources (${note.sources.length})`,
+      el("span", { className: "cov", textContent: `${withTldr} with TL;DR` })),
+    list));
+  const legend = el("p", { className: "legend" },
+    el("span", {}, el("span", { className: "cite", textContent: "[3]" }), " from your sources"),
+    el("span", {}, el("span", { className: "gk", textContent: "dashed" }), el("span", { className: "gk-tag", textContent: "general knowledge" }), " not from your sources"));
+  head.append(el("div", { className: "head-foot" }, legend, el("div", { className: "head-actions" }, exitRow("top"))));
+
+  // Map and Glossary tabs come in later stages; the tab bar is already here, with them hidden.
+  const tab = (id, label, selected, hidden) => {
+    const a = el("a", { className: "tab", id: `tab-${id}`, href: `#${id}`, textContent: label, hidden });
+    a.setAttribute("role", "tab");
+    a.setAttribute("aria-selected", String(selected));
+    return a;
+  };
+  const tabs = el("div", { className: "tabs" }, tab("steps", "Steps", true, false), tab("map", "Map", false, true), tab("glossary", "Glossary", false, true));
+  tabs.setAttribute("role", "tablist");
+  tabs.setAttribute("aria-label", "Study note views");
+  const steps = el("ol", { className: "steps", id: "steps" });
+  steps.setAttribute("role", "tabpanel");
+  steps.setAttribute("aria-labelledby", "tab-steps");
+  steps.append(...STEPS.map((_, i) => stepItem(i)));
+  const prepBox = el("section", { className: "prep", id: "prep", ariaLabel: "Preparing your sources" });
+  $("note-body").replaceChildren(head, tabs, prepBox, steps, el("div", { className: "note-foot" }, exitRow("bottom")));
+  renderPrep();
+}
+
+function stepItem(i) {
+  const s = STEPS[i], st = stepState(i), n = i + 1;
+  const top = el("div", { className: "step-top" }, `step ${n} · ${s.title}`,
+    el("span", { className: "state", textContent: { done: "done ✓", ready: "ready", loading: "working…", locked: "locked" }[st] }));
+  if (st === "done") {
+    const at = i < 3 ? note.step_times?.[s.name]
+      : Object.values(note.answers || {}).map(a => str(a.answered_at)).sort().at(-1);
+    if (at) top.append(el("span", { className: "saved-tag", title: `Saved ${longDate(at)}` }, el("b", { textContent: "Saved ✓" }), ` ${savedTime(at)}`));
+  }
+  if (st === "done" && i < 3 && !ui.confirm) {
+    top.append(el("button", { className: "linkish", type: "button", textContent: "regenerate", onclick: () => { ui.confirm = n; renderNote(); } }));
+  }
+  const body = el("div", { className: "step-body" }, top);
+  if (ui.confirm === n) {
+    const later = [];
+    if (n === 1 && note.steps.debates) later.push(note.steps.questions ? "steps 2–3" : "step 2");
+    if (n === 2 && note.steps.questions) later.push("step 3");
+    if (Object.keys(note.answers || {}).length) later.push("your answers");
+    body.append(el("div", { className: "confirm-row" },
+      later.length ? `Replace this step? This also clears ${later.join(" and ")}.` : "Replace this step with a new version?",
+      el("button", { className: "btn", type: "button", textContent: "Regenerate", onclick: () => { ui.confirm = null; runStep(n, true); } }),
+      el("button", { className: "linkish", type: "button", textContent: "cancel", onclick: () => { ui.confirm = null; renderNote(); } })));
+  }
+  const practiceOpen = i === 3 && (practice.started || answeredCount() > 0 || Object.keys(note.drafts || {}).length > 0);
+  if (st === "ready" && !practiceOpen) {
+    body.append(el("button", { className: "q-btn", type: "button", onclick: () => (i === 3 ? startPractice() : runStep(n)) },
+      el("span", { textContent: s.q }), el("span", { className: "go", ariaHidden: "true", textContent: "→" })));
+  } else if (st === "locked") {
+    body.append(el("button", { className: "q-btn", type: "button", disabled: true }, el("span", { textContent: s.q }), el("span", { className: "go", ariaHidden: "true", textContent: "⌁" })),
+      el("p", { className: "lock-note", textContent: i === 0 ? "Finish preparing your sources first" : `Finish step ${i} first` }));
+  } else {
+    body.append(el("h2", { className: "q-done", textContent: s.q }));
+  }
+  if (st === "loading") {
+    body.append(el("div", { className: "loading", role: "status" },
+      el("p", { textContent: s.loading }), el("div", { className: "skel w1" }), el("div", { className: "skel w2" }), el("div", { className: "skel w3" })));
+  }
+  if (ui.errors[n]) {
+    body.append(el("p", { className: "step-error", role: "alert" }, ui.errors[n],
+      el("button", { className: "linkish", type: "button", textContent: "try again", onclick: () => runStep(n, Boolean(note.steps[s.name])) })));
+  }
+  if (st === "done" && i < 3) body.append(stepContent(i));
+  if (i === 3 && st !== "locked" && practiceOpen) body.append(el("div", { className: "step-content" }, practiceView()));
+  return el("li", { className: `step ${st}`, id: `step-${n}` },
+    el("div", { className: "node", textContent: st === "done" ? "✓" : String(n), ariaHidden: "true" }), body);
+}
+
+async function runStep(n, regenerate = false) {
+  ui.loading[n - 1] = true;
+  delete ui.errors[n];
+  renderNote();
+  try {
+    note = await send("POST", `/api/study/${noteId}/steps/${n}`, regenerate ? { regenerate: true } : {});
+    if (n <= 3 && regenerate) { practice.editing.clear(); practice.draft = null; practice.finished = false; practice.at = 0; practice.started = answeredCount() > 0; }
+  } catch (err) {
+    ui.errors[n] = err.message;
+  }
+  ui.loading[n - 1] = false;
+  renderNote();
+  if (!ui.errors[n]) $(`step-${n}`)?.querySelector(".q-done")?.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
+}
+
+function stepContent(i) {
+  const box = el("div", { className: "step-content" });
+  if (i === 0) {
+    box.append(...arr(note.steps.models?.models).map((m, k) => el("article", { className: "card" },
+      el("h3", {}, el("span", { className: "num", textContent: pad(k + 1) }), str(m.name)),
+      el("div", { className: "part" }, el("p", { className: "label", textContent: "the idea" }), para(m.idea)),
+      el("div", { className: "part" }, el("p", { className: "label", textContent: "why experts use it" }), para(m.why_experts_use_it)),
+      el("div", { className: "part" }, el("p", { className: "label", textContent: "example" }), para(m.example)),
+      sourceChips(m.sources))));
+  }
+  if (i === 1) {
+    const d = note.steps.debates || {};
+    if (d.coverage_note) box.append(el("p", { className: "coverage" }, ...rich(d.coverage_note)));
+    box.append(...arr(d.debates).map((db, k) => el("article", { className: "card" },
+      el("h3", {}, el("span", { className: "num", textContent: pad(k + 1) }), str(db.question)),
+      el("div", { className: "sides" }, ...[["Side A", db.side_a], ["Side B", db.side_b]].map(([label, side]) => el("section", { className: "side" },
+        el("span", { className: "side-tag", textContent: label }),
+        el("p", { className: "pos", textContent: str(side?.position) }),
+        el("p", { className: "label", textContent: "strongest argument" }), para(side?.strongest_argument),
+        sourceChips(side?.sources)))),
+      el("div", { className: "settle" }, el("p", { className: "label", textContent: "what would settle it" }), para(db.what_would_settle_it)))));
+  }
+  if (i === 2) {
+    box.append(el("ol", { className: "qlist" }, ...questions().map((q, k) => el("li", {},
+      el("span", { className: "num", textContent: pad(k + 1) }),
+      el("span", { className: "qt", textContent: str(q.question) }),
+      typeTag(q.type)))));
+  }
+  return box;
+}
+
+const typeTag = t => el("span", { className: `type ${TYPES.has(t) ? t : "other"}`, textContent: str(t || "question") });
+
+// --- preparing sources (Summarize first) ----------------------------------------------
+// The browser summarizes each source without a TL;DR through the normal summarize endpoint,
+// 3 at a time so every request stays short. Leaving the page pauses it; reopening resumes.
+
+const PREP_PARALLEL = 3;
+const PREP_LABELS = { waiting: "waiting", reading: "reading…", retrying: "retrying…", done: "done ✓",
+  excerpt: "using excerpt", failed: "failed, using excerpt", limit: "using excerpt", skipped: "using excerpt" };
+const prep = { running: false, stopped: false, alert: "", status: new Map(), finished: false };
+
+const preparing = () => Boolean(note?.summarize_first && !note.sources_ready && !note.steps.models);
+const prepSettled = st => ["done", "excerpt", "failed", "limit", "skipped"].includes(st);
+
+function renderPrep() {
+  const box = $("prep");
+  if (!box) return;
+  if (prep.finished) {
+    const sts = [...prep.status.values()];
+    const done = sts.filter(st => st === "done").length, excerpts = sts.length - done;
+    box.className = "prep finished";
+    box.replaceChildren(el("p", {}, el("b", { textContent: "Sources prepared ✓" }),
+      ` · ${done} with TL;DR${excerpts ? ` · ${excerpts} using excerpt${excerpts === 1 ? "" : "s"}` : ""}`));
+    if (prep.alert) box.append(el("p", { className: "prep-alert", role: "alert", textContent: prep.alert }));
+    return;
+  }
+  if (!preparing()) { box.replaceChildren(); return; }
+  box.className = "prep";
+  const total = note.sources.length;
+  const settled = note.sources.filter(src => prepSettled(prep.status.get(src.id) || (src.has_summary ? "done" : "waiting"))).length;
+  const bar = el("div", { className: "prep-bar" }, el("i", { style: `width: ${total ? Math.round((settled / total) * 100) : 100}%` }));
+  bar.setAttribute("role", "progressbar");
+  bar.setAttribute("aria-valuemin", "0");
+  bar.setAttribute("aria-valuemax", String(total));
+  bar.setAttribute("aria-valuenow", String(settled));
+  bar.setAttribute("aria-label", "Sources prepared");
+  const alert = el("p", { className: "prep-alert", role: "alert", textContent: prep.alert });
+  const list = el("ol", { className: "prep-list" }, ...note.sources.map(src => {
+    const st = prep.status.get(src.id) || (src.has_summary ? "done" : "waiting");
+    return el("li", {}, el("span", { className: "t", textContent: str(src.title || src.url) }),
+      el("span", { className: `prep-st ${st}`, textContent: PREP_LABELS[st] }));
+  }));
+  const skip = el("button", { className: "linkish", type: "button", textContent: "Skip and use excerpts", onclick: skipPrep });
+  box.replaceChildren(
+    el("h2", { textContent: "Preparing your sources" }),
+    el("p", { className: "sub", textContent: "Writing TL;DR summaries so step 1 has more to work with. You can leave and come back; it picks up where it stopped." }),
+    el("div", { className: "prep-progress" }, bar, `${settled} of ${total} ready`),
+    alert, list, el("div", { className: "prep-foot" }, skip));
+}
+
+function setPrep(src, st) {
+  prep.status.set(src.id, st);
+  renderPrep();
+}
+
+async function summarizeSource(src) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    if (prep.stopped) return;
+    setPrep(src, attempt === 1 ? "reading" : "retrying");
+    try {
+      await send("POST", `/api/bookmarks/${src.id}/summarize`, {});
+      src.has_summary = true;
+      setPrep(src, "done");
+      return;
+    } catch (err) {
+      if (prep.stopped) return;
+      if (err.status === 422) { setPrep(src, "excerpt"); return; }           // too little text: excerpt, no blocking
+      if (err.status === 429 || err.status === 503) {                          // hourly limit, or summaries unavailable
+        prep.alert = `${err.message} The remaining sources will use excerpts; you can summarize them later from the Library.`;
+        stopRemaining("limit");
+        setPrep(src, "limit");
+        return;
+      }
+      if (attempt === 2) setPrep(src, "failed");                                // one automatic retry, then excerpt
+    }
+  }
+}
+
+function stopRemaining(st) {
+  prep.stopped = true;
+  for (const src of note.sources) {
+    const cur = prep.status.get(src.id);
+    if (!src.has_summary && (!cur || cur === "waiting")) prep.status.set(src.id, st);
+  }
+}
+
+async function runPrep() {
+  if (prep.running) return;
+  prep.running = true;
+  prep.stopped = false;
+  prep.skipping = false;
+  prep.alert = "";
+  prep.status = new Map(note.sources.map(src => [src.id, src.has_summary ? "done" : "waiting"]));
+  renderPrep();
+  const queue = note.sources.filter(src => !src.has_summary);
+  const worker = async () => {
+    while (queue.length && !prep.stopped) await summarizeSource(queue.shift());
+  };
+  await Promise.all(Array.from({ length: PREP_PARALLEL }, worker));
+  prep.running = false;
+  if (!prep.skipping) await finishPrep();
+}
+
+async function skipPrep() {
+  prep.skipping = true;
+  stopRemaining("skipped");
+  for (const [id, st] of prep.status) if (st === "reading" || st === "retrying") prep.status.set(id, "skipped");
+  await finishPrep();
+}
+
+// Record that preparation is over (finished or skipped) and unlock step 1.
+async function finishPrep() {
+  try {
+    const fresh = await send("POST", `/api/study/${noteId}/sources-ready`);
+    // Keep has_summary for sources summarized this visit even if the reply raced them.
+    const summarized = new Set(note.sources.filter(src => src.has_summary).map(src => src.id));
+    note = { ...fresh, sources: fresh.sources.map(src => ({ ...src, has_summary: src.has_summary || summarized.has(src.id) })) };
+  } catch {
+    note.sources_ready = true;      // step 1 opens anyway; the server will offer this again next time
+  }
+  prep.finished = true;
+  renderNote();
+}
+
+// --- step 4: practice -----------------------------------------------------------
+
+// The server sends its answer limits; the page uses the same ones, so any answer it would
+// accept (even "I'm not sure") can be checked.
+const answerMin = () => Number(note?.limits?.answer_min) || 1;
+const answerMax = () => Number(note?.limits?.answer_max) || 4000;
+const canCheck = text => str(text).trim().length >= answerMin();
+
+function startPractice() {
+  practice.started = true;
+  practice.at = Math.max(0, questions().findIndex((_, i) => !answerFor(i + 1)?.feedback));
+  renderNote();
+  $("step-4")?.querySelector("textarea")?.focus({ preventScroll: true });
+}
+
+function practiceView() {
+  const qs = questions(), wrap = el("div", { className: "practice" });
+  if (practice.finished && allAnswered()) {
+    const tally = {};
+    qs.forEach((_, i) => { const v = answerFor(i + 1)?.verdict; if (VERDICTS.has(v)) tally[v] = (tally[v] || 0) + 1; });
+    wrap.append(el("div", { className: "card done-card" },
+      el("h3", {}, `All ${qs.length} questions answered`),
+      el("p", { className: "prose", textContent: "Revisit the partial and shallow ones in a few days; spacing practice is what makes it stick." }),
+      el("div", { className: "tally" }, ...["deep", "partial", "shallow", "incorrect"].filter(v => tally[v]).map(v => el("span", { className: `verdict ${v}`, textContent: `${tally[v]} ${v}` }))),
+      el("button", { className: "btn ghost", type: "button", textContent: "Review from question 1",
+        onclick: () => { practice.finished = false; practice.reviewing = true; practice.at = 0; renderNote(); } })));
+    return wrap;
+  }
+  const at = Math.min(practice.at ?? 0, qs.length - 1), num = at + 1, q = qs[at], ans = answerFor(num);
+  const segs = el("div", { className: "segs", ariaHidden: "true" }, ...qs.map((_, k) =>
+    el("i", { className: k === at ? "now" : answerFor(k + 1)?.feedback ? "done" : "" })));
+  wrap.append(el("div", { className: "progress" },
+    el("span", { className: "count", textContent: `${num} / ${qs.length}` }), segs,
+    el("span", { className: "mono", style: "font-size: var(--fs-meta); color: var(--fg-3); white-space: nowrap", textContent: `${answeredCount()} answered` })));
+  wrap.append(el("div", { className: "card", style: "margin-top: 14px" }, typeTag(q.type),
+    el("p", { className: "ask-q", style: "margin-top: 10px", textContent: str(q.question) })));
+  const area = el("div", { style: "margin-top: 16px; display: grid; gap: 14px" });
+  wrap.append(area);
+  if (practice.checking) {
+    area.append(el("div", { className: "loading", role: "status", style: "margin-top: 0" },
+      el("p", { textContent: "Reading your answer…" }), el("div", { className: "skel w1" }), el("div", { className: "skel w2" })));
+    return wrap;
+  }
+  if (ans?.feedback && !practice.editing.has(num)) { area.append(feedbackCard(q, num, ans)); return wrap; }
+
+  // The box shows what you're typing, else this question's saved draft, else (after Try again) your last answer.
+  if (practice.draft?.q !== num) {
+    const saved = note.drafts?.[num] || note.drafts?.[String(num)];
+    const text = saved ? str(saved.text) : practice.editing.has(num) ? str(ans?.answer) : "";
+    practice.draft = { q: num, text, savedText: text, timer: null };
+  }
+  const draft = practice.draft;
+  const ta = el("textarea", { id: `answer-${num}`, value: draft.text, maxLength: answerMax(), placeholder: "Explain it in your own words, as if to a smart friend…" });
+  const check = el("button", { className: "btn", type: "button", textContent: "Check my answer", disabled: !canCheck(ta.value) });
+  const saveBtn = el("button", { className: "btn ghost", type: "button", textContent: "Save draft", onclick: () => flushDraft({ manual: true }) });
+  const err = el("p", { className: "practice-error", role: "alert", textContent: practice.error });
+  const status = el("p", { className: "draft-status", id: "draft-status", ariaLive: "polite" });
+  const savedDraft = note.drafts?.[num] || note.drafts?.[String(num)];
+  if (savedDraft && draft.text === draft.savedText) status.textContent = `Draft saved · ${savedTime(savedDraft.saved_at)}`;
+  ta.addEventListener("input", () => {
+    check.disabled = !canCheck(ta.value);
+    draft.text = ta.value;
+    clearTimeout(draft.timer);
+    draft.timer = setTimeout(() => flushDraft(), DRAFT_DELAY);    // autosave once typing pauses
+  });
+  check.addEventListener("click", () => submitAnswer(num, ta.value.trim()));
+  const row = el("div", { className: "row-btns" }, check, saveBtn, el("span", { className: "spacer" }));
+  if (practice.editing.has(num)) row.append(el("button", { className: "linkish", type: "button", textContent: "back to feedback",
+    onclick: () => { flushDraft(); practice.editing.delete(num); practice.error = ""; practice.draft = null; renderNote(); } }));
+  else if (at < qs.length - 1) row.append(el("button", { className: "linkish", type: "button", textContent: "skip for now →",
+    onclick: () => { flushDraft(); practice.at = at + 1; practice.error = ""; renderNote(); } }));
+  area.append(el("div", { className: "answer-box" },
+    el("label", { htmlFor: ta.id, textContent: "your answer" }), ta,
+    el("p", { className: "hint", textContent: "No notes needed. Say why, not just what. Drafts save as you type." })), err, row, status);
+  return wrap;
+}
+
+async function submitAnswer(num, text) {
+  clearTimeout(practice.draft?.timer);
+  practice.checking = true;
+  practice.error = "";
+  renderNote();
+  try {
+    note = await send("POST", `/api/study/${noteId}/answers/${num}`, { answer: text });   // also clears the draft
+    practice.editing.delete(num);
+    practice.draft = null;
+  } catch (err) {
+    practice.error = err.message;     // what they wrote stays in practice.draft, so it's still in the box
+  }
+  practice.checking = false;
+  renderNote();
+  $("step-4")?.querySelector(practice.error ? "textarea" : ".feedback")?.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
+}
+
+function feedbackCard(q, num, ans) {
+  const f = ans.feedback || {}, verdict = VERDICTS.has(f.verdict) ? f.verdict : "partial";
+  const right = arr(f.what_you_got_right).map(str).filter(Boolean);
+  const wrong = arr(f.what_is_wrong).filter(w => w && (w.claim || w.why));
+  const missing = arr(f.what_you_are_missing).map(str).filter(Boolean);
+  const card = el("article", { className: "feedback", ariaLabel: "Feedback on your answer" },
+    el("div", { className: "fb-head" }, el("span", { className: `verdict ${verdict}`, textContent: verdict }), el("p", { textContent: VERDICT_LINE[verdict] })),
+    el("section", {}, el("p", { className: "label", textContent: "your answer" }), el("p", { className: "your-answer", textContent: str(ans.answer) })));
+  if (right.length) card.append(el("section", {}, el("p", { className: "label", textContent: "what you got right" }),
+    el("ul", { className: "fb-list right" }, ...right.map(t => el("li", {}, ...rich(t))))));
+  card.append(el("section", {}, el("p", { className: "label", textContent: "what's wrong and why" }),
+    wrong.length ? el("ul", { className: "fb-wrong-list" }, ...wrong.map(w => el("li", {},
+      w.claim ? el("p", { className: "claim", textContent: `“${str(w.claim)}”` }) : "", el("p", { className: "why" }, ...rich(w.why)))))
+      : el("p", { className: "fb-wrong none", textContent: "Nothing incorrect." })));
+  if (missing.length) card.append(el("section", {}, el("p", { className: "label", textContent: "what you're missing" }),
+    el("ul", { className: "fb-list missing" }, ...missing.map(t => el("li", {}, ...rich(t))))));
+  const reveal = el("div", { className: "reveal" });
+  if (arr(ans.deep_answer_includes).length) reveal.append(el("div", {}, el("p", { className: "label", textContent: "a deep answer includes" }),
+    el("ul", { className: "fb-list right" }, ...arr(ans.deep_answer_includes).map(t => el("li", {}, ...rich(t))))));
+  if (ans.shallow_answer) reveal.append(el("div", {}, el("p", { className: "label", textContent: "a shallow answer looks like" }), para(ans.shallow_answer)));
+  card.append(el("details", { className: "model" },
+    el("summary", {}, el("span", { className: "chev", ariaHidden: "true", textContent: "›" }), "Show model answer"),
+    para(f.model_answer), reveal.children.length ? reveal : ""));
+  if (f.follow_up) card.append(el("div", { className: "follow" }, el("p", { className: "label", textContent: "follow-up question" }), el("p", { className: "prose", textContent: str(f.follow_up) })));
+  const last = isLastStop();
+  card.append(el("div", { className: "row-btns" },
+    el("button", { className: "btn ghost", type: "button", textContent: "Try again", onclick: () => { practice.editing.add(num); practice.error = ""; practice.draft = null; renderNote(); $(`answer-${num}`)?.focus(); } }),
+    el("span", { className: "spacer" }),
+    el("button", { className: "btn", type: "button", textContent: last ? "Finish" : "Next question →", onclick: nextQuestion })));
+  return card;
+}
+
+// Finish once everything is answered; when reviewing, step through in order instead.
+const isLastStop = () => allAnswered() && (!practice.reviewing || practice.at === questions().length - 1);
+
+function nextQuestion() {
+  const qs = questions();
+  if (isLastStop()) {
+    practice.finished = true;
+    practice.reviewing = false;
+  } else if (practice.reviewing) {
+    practice.at++;
+  } else {
+    const later = qs.findIndex((_, k) => k > practice.at && !answerFor(k + 1)?.feedback);
+    practice.at = later !== -1 ? later : qs.findIndex((_, k) => !answerFor(k + 1)?.feedback);
+  }
+  practice.error = "";
+  renderNote();
+  $("step-4")?.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
+}
+
+// --- ⋯ menu and deleting ------------------------------------------------------------
+
+// A ⋯ button with a one-item menu ("Delete note"). onDeleted runs after the note is gone.
+function noteMenu(n, onDeleted = () => { location.href = "/study?deleted=1"; }) {
+  const btn = el("button", { className: "more-btn", type: "button", textContent: "⋯" });
+  btn.setAttribute("aria-label", `More actions for “${str(n.topic)}”`);
+  btn.setAttribute("aria-haspopup", "menu");
+  btn.setAttribute("aria-expanded", "false");
+  const wrap = el("div", { className: "menu-wrap" }, btn);
+  let menu = null;
+  const close = (refocus = false) => {
+    if (!menu) return;
+    menu.remove(); menu = null;
+    btn.setAttribute("aria-expanded", "false");
+    document.removeEventListener("click", outside, true);
+    if (refocus) btn.focus();
+  };
+  const outside = e => { if (!wrap.contains(e.target)) close(); };
+  btn.addEventListener("click", () => {
+    if (menu) { close(); return; }
+    const del = el("button", { type: "button", className: "danger", textContent: "Delete note",
+      onclick: () => { close(); confirmDelete(n, btn, onDeleted); } });
+    del.setAttribute("role", "menuitem");
+    menu = el("div", { className: "menu" }, del);
+    menu.setAttribute("role", "menu");
+    menu.addEventListener("keydown", e => { if (e.key === "Escape" || e.key === "Tab") { e.preventDefault(); close(true); } });
+    wrap.append(menu);
+    btn.setAttribute("aria-expanded", "true");
+    document.addEventListener("click", outside, true);
+    del.focus();
+  });
+  return wrap;
+}
+
+// A confirmation dialog. action() runs on "Delete": it throws to show an error in the dialog,
+// or returns a value that's passed to onDone after the dialog closes.
+let dialogSeq = 0;
+function confirmDialog({ title, body, action, onDone, trigger }) {
+  const n = ++dialogSeq, titleId = `cd-title-${n}`, descId = `cd-desc-${n}`;
+  const cancel = el("button", { className: "btn ghost", type: "button", textContent: "Cancel" });
+  const go = el("button", { className: "btn danger", type: "button", textContent: "Delete" });
+  const err = el("p", { className: "err", role: "alert" });
+  const box = el("div", { className: "cdialog" },
+    el("h2", { id: titleId, textContent: title }), el("p", { id: descId, textContent: body }),
+    err, el("div", { className: "btns" }, cancel, go));
+  box.setAttribute("role", "alertdialog");
+  box.setAttribute("aria-modal", "true");
+  box.setAttribute("aria-labelledby", titleId);
+  box.setAttribute("aria-describedby", descId);
+  const wrapEl = el("div", { className: "cdialog-wrap" }, el("div", { className: "cdialog-scrim", onclick: () => { if (!cancel.disabled) close(); } }), box);
+  const close = (confirmed = false, result) => {
+    wrapEl.remove();
+    document.body.style.overflow = "";
+    if (confirmed) onDone(result); else trigger?.focus();
+  };
+  cancel.addEventListener("click", () => close());
+  go.addEventListener("click", async () => {
+    go.disabled = cancel.disabled = true;
+    go.textContent = "Deleting…";
+    err.textContent = "";
+    try {
+      close(true, await action());
+    } catch (e) {
+      err.textContent = e.message;
+      go.disabled = cancel.disabled = false;
+      go.textContent = "Delete";
+    }
+  });
+  box.addEventListener("keydown", e => {
+    if (e.key === "Escape") { e.preventDefault(); if (!cancel.disabled) close(); return; }
+    if (e.key !== "Tab") return;
+    const f = [cancel, go].filter(btn => !btn.disabled);
+    if (!f.length) { e.preventDefault(); return; }
+    if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f.at(-1).focus(); }
+    else if (!e.shiftKey && document.activeElement === f.at(-1)) { e.preventDefault(); f[0].focus(); }
+  });
+  document.body.append(wrapEl);
+  document.body.style.overflow = "hidden";
+  cancel.focus();           // the safe choice first
+}
+
+function confirmDelete(n, trigger, onDeleted) {
+  confirmDialog({
+    title: `Delete “${str(n.topic)}”?`,
+    body: "This removes its steps, answers, drafts, and map. Your saved items stay in the Library.",
+    trigger, onDone: onDeleted,
+    action: async () => {
+      try {
+        await send("DELETE", `/api/study/${Number(n.id)}`);
+      } catch (e) {
+        if (e.status !== 404) throw new Error(`Couldn't delete it: ${e.message}`);    // already gone counts as deleted
+      }
+    },
+  });
+}
+
+function flash(container, text, warn = false) {
+  container.querySelector(".flash-msg")?.remove();
+  const msg = el("p", { className: warn ? "flash-msg warn" : "flash-msg", role: warn ? "alert" : "status", textContent: text });
+  container.prepend(msg);
+  setTimeout(() => msg.remove(), warn ? 12000 : 6000);
+}
+
+// --- saving drafts and leaving ------------------------------------------------------
+
+const DRAFT_DELAY = 2000;   // ms after typing stops
+
+function setDraftStatus(text, { error = false, retry = null } = {}) {
+  const status = $("draft-status");
+  if (!status) return;
+  status.className = error ? "draft-status error" : "draft-status";
+  status.replaceChildren(text);
+  if (retry) status.append(el("button", { className: "linkish", type: "button", textContent: "retry", onclick: retry }));
+}
+
+// Send the current question's draft if it changed. Returns false only if a save failed.
+async function flushDraft({ manual = false } = {}) {
+  const d = practice.draft;
+  if (!d) return true;
+  clearTimeout(d.timer);
+  if (d.text === d.savedText) {
+    if (manual) setDraftStatus(d.text.trim() ? "No changes since the last save." : "Nothing to save yet.");
+    return true;
+  }
+  const text = d.text;
+  setDraftStatus("Saving draft…");
+  try {
+    const r = await send("PUT", `/api/study/${noteId}/drafts/${d.q}`, { text });
+    d.savedText = text;
+    const drafts = { ...(note.drafts || {}) };
+    delete drafts[String(d.q)];
+    if (r.saved_at) drafts[d.q] = { text, saved_at: r.saved_at };
+    note.drafts = drafts;
+    if (practice.draft === d) setDraftStatus(r.saved_at ? `Draft saved · ${savedTime(r.saved_at)}` : "Draft cleared.");
+    return true;
+  } catch (err) {
+    if (practice.draft === d) setDraftStatus(`Couldn't save the draft: ${err.message}`, { error: true, retry: () => flushDraft({ manual: true }) });
+    return false;
+  }
+}
+
+// Leaving the page (closing the tab, navigating away): send an unsaved draft without waiting.
+addEventListener("pagehide", () => {
+  const d = practice.draft;
+  if (!noteId || !d || d.text === d.savedText) return;
+  fetch(`/api/study/${noteId}/drafts/${d.q}`, { method: "PUT", keepalive: true,
+    headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: d.text }) });
+});
+
+function exitRow(where) {
+  const msg = el("p", { className: "exit-msg", role: "alert" });
+  const btn = el("button", { className: "btn ghost", type: "button", textContent: "Save & exit" });
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+    if (await flushDraft()) { location.href = "/study"; return; }
+    btn.disabled = false;
+    btn.textContent = "Save & exit";
+    msg.replaceChildren("Couldn't save your draft, so you're still here.",
+      el("a", { className: "linkish", href: "/study", textContent: "leave without saving" }));
+  });
+  const row = el("div", { className: "exit-row" }, btn, msg);
+  row.dataset.where = where;
+  return row;
+}
+
+// "Step 2 of 4 · 3 of 10 answered · draft saved"
+function progressLine(n) {
+  const parts = [n.steps_done >= 4 ? "All 4 steps done" : `Step ${n.steps_done + 1} of 4`];
+  if (n.has_questions) parts.push(`${n.answered} of 10 answered`);
+  if (n.drafts) parts.push(n.drafts === 1 ? "draft saved" : `${n.drafts} drafts saved`);
+  return parts.join(" · ");
+}
+
+// --- notes list -----------------------------------------------------------------
+
+async function loadNotes() {
+  let notes;
+  try {
+    notes = (await api("/api/study"))?.notes;
+    if (!Array.isArray(notes)) throw new Error("Unexpected response from server");
+  } catch (err) {
+    $("notes-body").replaceChildren(el("div", { className: "page-msg error" },
+      el("strong", { textContent: "Couldn't load your study notes" }), err.message, el("br"),
+      el("button", { className: "linkish", type: "button", textContent: "try again", onclick: loadNotes })));
+    return;
+  }
+  listState.notes = notes;
+  renderNotesList();
+}
+
+// --- notes list: a checkbox on every row, and a selection bar with Delete -------------
+
+const listState = { notes: [], selected: new Set() };
+
+function trashIcon() {
+  const ns = "http://www.w3.org/2000/svg";
+  const icon = document.createElementNS(ns, "svg");
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("fill", "none");
+  icon.setAttribute("stroke", "currentColor");
+  icon.setAttribute("stroke-width", "1.8");
+  icon.setAttribute("stroke-linecap", "round");
+  icon.setAttribute("stroke-linejoin", "round");
+  icon.setAttribute("aria-hidden", "true");
+  for (const d of ["M4 7h16", "M9 7V4.5h6V7", "M6.5 7l1 12.5h9l1-12.5", "M10 11v5.5", "M14 11v5.5"]) {
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", d);
+    icon.append(path);
+  }
+  return icon;
+}
+
+function noteRowContent(n, headingId) {
+  return [
+    el("div", { style: "min-width: 0" },
+      el("h2", { id: headingId, textContent: str(n.topic) }),
+      el("div", { className: "meta", textContent: `${plural(n.source_count, "source")} · created ${shortDate(n.created_at)}` }),
+      el("span", { className: "progress-line", textContent: progressLine(n) })),
+    el("div", { className: "stats" },
+      el("span", {}, el("span", { className: "dots", ariaHidden: "true" }, ...[0, 1, 2, 3].map(k => el("i", { className: k < n.steps_done ? "on" : "" }))), `${n.steps_done} / 4 steps`),
+      el("span", {}, el("span", { className: "bar", ariaHidden: "true" }, el("i", { style: `width: ${Math.min(100, n.answered * 10)}%` })), `${n.answered} / 10 answered`)),
+  ];
+}
+
+function renderNotesList(focus = null) {
+  const { notes, selected } = listState;
+  if (!notes.length) {
+    selected.clear();
+    renderSelbar();
+    $("notes-body").replaceChildren(el("div", { className: "empty-notes" },
+      el("strong", { textContent: "No study notes yet" }),
+      "In the Library, choose “Select” to pick sources, or open a shelf and use “Study this shelf”.", el("br"),
+      el("a", { className: "linkish", href: "/library", textContent: "go to the Library →", style: "display: inline-block; margin-top: 10px" })));
+    return;
+  }
+  // The checkbox sits beside the row's link, not inside it, so ticking it never opens the note.
+  const list = el("ul", { className: "notes" }, ...notes.map(n => {
+    const headingId = `note-h-${Number(n.id)}`;
+    const box = el("input", { type: "checkbox", className: "check", checked: selected.has(n.id) });
+    box.dataset.id = String(n.id);
+    box.setAttribute("aria-label", `Select “${str(n.topic)}”`);
+    const li = el("li", { className: selected.has(n.id) ? "note-item selected" : "note-item" },
+      el("label", { className: "pick" }, box),
+      el("a", { className: "note-row", href: `/study/${Number(n.id)}` }, ...noteRowContent(n, headingId)));
+    box.addEventListener("change", () => {
+      box.checked ? selected.add(n.id) : selected.delete(n.id);
+      li.classList.toggle("selected", box.checked);
+      renderSelbar();       // only the bar changes, so keyboard focus stays on the checkbox
+    });
+    return li;
+  }));
+  $("notes-body").replaceChildren(list);
+  renderSelbar();
+  if (focus) (typeof focus === "string" ? document.querySelector(focus) : focus)?.focus();
+}
+
+// Tick boxes to match listState.selected without re-rendering (keeps focus where it is).
+function syncChecks() {
+  document.querySelectorAll("#notes-body .check").forEach(box => {
+    box.checked = listState.selected.has(Number(box.dataset.id));
+    box.closest(".note-item").classList.toggle("selected", box.checked);
+  });
+  renderSelbar();
+}
+
+function renderSelbar() {
+  const count = listState.selected.size;
+  const slot = $("selbar-slot");
+  // Focus can't stay inside a bar that's closing; hand it to the first row's checkbox.
+  if (!count && slot.contains(document.activeElement)) document.querySelector("#notes-body .check")?.focus();
+  slot.classList.toggle("open", count > 0);
+  document.body.classList.toggle("has-selbar", count > 0);
+  if (!count) return;       // keep the last count while the bar fades out
+  $("selbar-n").replaceChildren(el("b", { textContent: String(count) }), " selected");
+  $("selbar-all").hidden = count === listState.notes.length;
+  $("selbar-delete").setAttribute("aria-label", count === 1 ? "Delete 1 selected note" : `Delete ${count} selected notes`);
+}
+$("selbar-delete").prepend(trashIcon());
+$("selbar-all").addEventListener("click", () => {
+  listState.notes.forEach(n => listState.selected.add(n.id));
+  syncChecks();
+  $("selbar-clear").focus();    // "Select all" hides itself once everything is selected
+});
+$("selbar-clear").addEventListener("click", () => { listState.selected.clear(); syncChecks(); });
+$("selbar-delete").addEventListener("click", () => {
+  const ids = [...listState.selected];
+  const one = ids.length === 1 ? listState.notes.find(n => n.id === ids[0]) : null;
+  confirmDialog({
+    title: one ? `Delete “${str(one.topic)}”?` : `Delete ${ids.length} study notes?`,
+    body: one ? "This removes its steps, answers, drafts, and map. Your saved items stay in the Library."
+              : "This removes their steps, answers, drafts, and maps. Your saved items stay in the Library.",
+    trigger: $("selbar-delete"),
+    action: async () => {
+      try { return await send("POST", "/api/study/bulk-delete", { ids }); }
+      catch (e) { throw new Error(`Couldn't delete ${one ? "it" : "them"}: ${e.message}`); }
+    },
+    onDone: result => afterListDelete([...result.deleted, ...result.not_found], result.failed),
+  });
+});
+
+// Remove deleted notes and clear the selection; any that failed stay selected so you can retry.
+function afterListDelete(goneIds, failed = []) {
+  const gone = new Set(goneIds.map(Number));
+  const oldIndex = listState.notes.findIndex(n => gone.has(Number(n.id)));
+  const byId = new Map(listState.notes.map(n => [Number(n.id), n]));
+  listState.notes = listState.notes.filter(n => !gone.has(Number(n.id)));
+  listState.selected = new Set(failed.map(f => Number(f.id)).filter(id => byId.has(id)));
+  let focus = null;
+  if (listState.selected.size) focus = $("selbar-delete");
+  else if (listState.notes.length) {
+    const next = listState.notes[Math.min(Math.max(oldIndex, 0), listState.notes.length - 1)];
+    focus = `.check[data-id="${Number(next.id)}"]`;
+  }
+  renderNotesList(focus);
+  let text = gone.size === 1 ? "Note deleted" : `${gone.size} notes deleted`;
+  if (failed.length) {
+    const names = failed.map(f => `“${str(byId.get(Number(f.id))?.topic ?? f.id)}”`).join(", ");
+    text = `${gone.size ? `${text}. ` : ""}Couldn't delete ${names}. ${failed.length === 1 ? "It's" : "They're"} still selected; try again.`;
+  }
+  flash($("view-notes"), text, failed.length > 0);
+}
+
+// --- views ----------------------------------------------------------------------
+
+if (noteId) {
+  $("view-note").hidden = false;
+  loadNote();
+} else {
+  $("view-notes").hidden = false;
+  document.title = "Study · Personal Knowledge Collection";
+  const deleted = new URLSearchParams(location.search).has("deleted");
+  if (deleted) history.replaceState(null, "", "/study");
+  loadNotes().then(() => { if (deleted) flash($("view-notes"), "Note deleted"); });
+}
+</script>
+</body>
+</html>

@@ -44,7 +44,7 @@ papers go on the shelf named by their watchlist's `category`. To shelve existing
 ### AI summaries
 
 The ✦ TL;DR button in an item's panel calls `POST /api/bookmarks/{id}/summarize` (`app/summarize.py`,
-at most 30 model calls per hour). For arXiv papers the full text is fetched once from arxiv.org,
+at most 60 model calls per hour). For arXiv papers the full text is fetched once from arxiv.org,
 HTML version first and then the PDF, at most one request every 15 seconds (arxiv.org's crawl
 delay), and stored in `full_text`; if that fails, the summary uses the abstract. Set
 `BOOKMARK_AGENT_CONTACT` to add a contact address to the User-Agent sent to arXiv.
